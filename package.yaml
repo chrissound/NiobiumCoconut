@@ -6,6 +6,7 @@ build-type: Simple
 maintainer: Chris Stryczynski
 dependencies:
 - base >=4.11 && <4.12
+- yesod-form
 # common
 - lens
 - aeson
