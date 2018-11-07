@@ -3,13 +3,17 @@
 --{-# LANGUAGE ScopedTypeVariables #-}
 --{-# LANGUAGE MultiParamTypeClasses #-}
 --{-# LANGUAGE FlexibleInstances #-}
---{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Main where
 
 import Data.Text (Text)
 -- import Yesod.Form.Types
+import Data.Bool 
 import Control.Monad
 import Control.Applicative
+import Data.Maybe (catMaybes)
+import Data.String (IsString)
+import Data.String.Conversions
 --import Data.Proxy
 
 main :: IO ()
@@ -51,13 +55,14 @@ class FieldGetter a where
   getField' :: String ->  a
 
 instance FieldGetter Bool where
-  getField' _ = True
+  getField' "true" = True
+  getField' _ = False
 
 instance FieldGetter Text where
-  getField' _ = ""
+  getField' = cs
 
 instance FieldGetter Int where
-  getField' _ = 123
+  getField' = read
 
 renderNioForm :: NioForm -> IO ()
 renderNioForm nf = forM_ (fields nf) $ \x -> do
@@ -82,22 +87,49 @@ data TestFormFields =
   | TestFormFieldInt4
 
 data MyEither a b = MyLeft a | MyRight b
+type FieldEr = (String, NioFieldError)
+type FormInput = [(String, String)]
 
-inputTest :: [String] -> Either Int TestForm
-inputTest = (liftM4 TestForm)
-  <$> (getField ((==) "test") testForm "Test")
-  <*> (getField (const True) testForm "Test2")
-  <*> (getField (const True) testForm "Test3")
-  <*> (getField ((==) 5) testForm "Test4")
+runInputForm :: NioForm -> FormInput -> Either NioForm TestForm
+runInputForm nf = (\case
+  Right x -> Right x
+  Left e -> Left $ NioForm { fields = fmap (f e) (fields nf)}
+  ) . inputTest
+  where
+    f e nfv = nfv {
+      fvErrors = (snd) <$> (filter (\(s,_) -> s == cs (fvId nfv)) e)
+      }
 
-getField :: FieldGetter a => (a -> Bool) -> NioForm -> String -> [String] -> Either Int a
-getField validation nf x y = do
-  let nf' = head $ fields nf
-  (\(NioFieldView _ _ _ _ _) -> do
-     let v = (getField' "test")
-     case validation v of
-       True -> Right v
-       False -> Right v
-    )
-    nf'
+inputTest :: FormInput -> Either ([FieldEr]) TestForm
+inputTest = do
+  ((liftM4 TestForm) <$> a <*> b <*> c <*> d) >>= \case
+    Right x' -> pure $ pure (x')
+    Left _ -> (\z -> do
+                   Left $ mconcat [
+                       getFormErrors z [a]
+                     , getFormErrors z [b]
+                     , getFormErrors z [c]
+                     , getFormErrors z [d]
+                     ]
+      )
+  where
+      a = getField (\x e -> x >>= (errr e (NioFieldErrorEmty "not test") ) . ((==) "test")) ""
+      b = getField (\x e -> x >>= (errr e (NioFieldErrorEmty "not test") ) . ((==) "test")) ""
+      c = getField (\x e -> x >>= (errr e (NioFieldErrorEmty "not test") ) . ((==) True)) ""
+      d = getField (\x e -> x >>= (errr e (NioFieldErrorEmty "not test") ) . ((==) 5)) ""
+      errr x e = (bool (Nothing) (Just (x, e)))
+
+getFormErrors :: FormInput -> [FormInput -> Either (FieldEr) a] -> [FieldEr]
+getFormErrors input functions = catMaybes $ (
+  \x -> case x input of
+    Right _ -> Nothing
+    Left e -> Just e
+  ) <$> functions
+
+getField :: FieldGetter a => (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
+getField validate x y = do
+  let val = Just (getField' x)
+  case validate (val) (x) of
+    Nothing -> Right (getField' x)
+    Just (s, e) -> Left (s,e)
 
