@@ -1,0 +1,47 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: ab225a6258566d1360edc3e5a2d26f4e8776b2e602f5c7e7b004cd4d29cacd80
+
+name:           niobiumcoconut
+version:        0.1.0.0
+author:         Chris Stryczynski
+maintainer:     Chris Stryczynski
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    ChangeLog.md
+
+library
+  exposed-modules:
+      Nioform
+      NioformInstances
+  other-modules:
+      Main
+      NioForm
+      NioFormInstances
+      Paths_niobiumcoconut
+  hs-source-dirs:
+      src
+  default-extensions: LambdaCase
+  build-depends:
+      aeson
+    , base >=4.11 && <4.12
+    , binary
+    , binary-orphans
+    , bytestring
+    , directory
+    , lens
+    , old-locale
+    , pretty-simple
+    , split
+    , stm
+    , string-conversions
+    , text
+    , thyme
+    , time
+    , yesod-form
+  default-language: Haskell2010
