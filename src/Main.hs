@@ -4,7 +4,6 @@
 module Main where
 
 import Data.Text (Text)
-import Data.Bool
 import Control.Monad
 import Text.Pretty.Simple (pPrint)
 import Debug.Trace
@@ -16,22 +15,30 @@ data TestForm = TestForm Text Text Bool Int deriving Show
 
 main :: IO ()
 main = do
-  -- renderNioForm testForm
-  -- print ""
-  pPrint $ runInputForm testForm inputTest [("f1", "test"), ("f3","aoeu")]
+  pPrint $
+    --runInputForm testForm inputTest [("f1", "test"), ("f3","true"), ("f4", "4")]
+    runInputForm testForm inputTest [
+        ("f1", "test")
+      , ("f2", "wohoo")
+      , ("f3","true")
+      , ("f4", "4")
+    ]
 
 renderNioForm :: NioForm -> IO ()
 renderNioForm nf = forM_ (fields nf) $ \x -> do
   print x
 
+emptyError :: [NioFieldError]
+emptyError = []
+
 testForm :: NioForm
 testForm = NioForm [
-    NioFieldView "Test" "f1" []   NioFieldInputText ""
-  , NioFieldView "Test 2" "f2" [] NioFieldInputText ""
-  , NioFieldView "Test 3" "f3" []
-    (NioFieldInputMultiple [("a","a"), ("b","b")])
-    ""
-  , NioFieldView "Test4" "f4" [] NioFieldInputDigit 0
+       NioFieldView "Test" "f1" emptyError   NioFieldInputText ""
+     , NioFieldView "Test 2" "f2" emptyError NioFieldInputText ""
+     , NioFieldView "Test 3" "f3" emptyError
+        (NioFieldInputMultiple [("a","a"), ("b","b")])
+        (show True)
+     , NioFieldView "Test4" "f4" emptyError NioFieldInputDigit (show 0)
   ]
 
 inputTest :: FormInput -> Either ([FieldEr]) TestForm
@@ -39,7 +46,7 @@ inputTest = do
   ((liftM4 TestForm) <$> a <*> b <*> c <*> d) >>= \case
     Right x' -> pure $ pure (x')
     Left _ -> (\z -> do
-                   Left $ traceShowId $ mconcat [
+                  Left $ traceShowId $ mconcat [
                        getFormErrors z [a]
                      , getFormErrors z [b]
                      , getFormErrors z [c]
@@ -47,21 +54,23 @@ inputTest = do
                      ]
       )
   where
-      a = getField (isPresent) "f1"
-      b = getField (isPresent) "f2"
-      c = getField (allRules [isPresent, isEq (== True) "True"]) "f3"
-      d = getField (\x k -> x >>= (errr k (NioFieldErrorEmty "not test") ) . ((==) 5)) "f4"
-      errr key e = traceShowId . bool (Just (key, e)) Nothing
+      a = myGetField (isPresent) "f1"
+      b = myGetField (isPresent) "f2"
+      c = myGetField (allRules[isPresent, isEq (== True) "Not true"]) "f3"
+      d = myGetField (allRules[isPresent, isEq (== 4) "Not 4"]) "f4"
+
+myGetField :: (Show a, FieldGetter a) => (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
+myGetField = getField (undefined)
 
 isPresent :: Maybe b -> a -> Maybe (a, NioFieldError)
 isPresent x k = case x of
   Just _ -> Nothing
-  Nothing -> Just (k, NioFieldErrorEmty "")
+  Nothing -> Just (k, NioFieldErrorV $ MyNioFieldErrorEmty)
 
 isEq :: (b -> Bool) -> Text -> Maybe b -> a -> Maybe (a, NioFieldError)
 isEq f t x k = case x of
-  Just x' -> if f x' then Nothing else Just (k, NioIncorrectValue $ "Value is not: " <> t)
-  _ -> Just (k, NioIncorrectValue "Not true")
+  Just x' -> if f x' then Nothing else Just (k, NioFieldErrorV $ MyNioIncorrectValue $  t)
+  _ -> Just (k, NioFieldErrorV $ MyNioIncorrectValue "Not true")
 
 allRules ::  [Maybe b -> a -> Maybe (a, NioFieldError)] -> Maybe b -> a -> Maybe (a, NioFieldError)
 allRules r v k = asum $ fmap (\r' -> r' v k) r

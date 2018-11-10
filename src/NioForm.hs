@@ -2,6 +2,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module NioForm where
 
@@ -14,10 +16,13 @@ data NioForm = NioForm {
   fields :: [NioFieldView]
   } deriving Show
 
-data NioFieldError =
-    NioFieldErrorEmty Text
-  | NioIncorrectValue Text
-  | NioFieldInternalFailure deriving Show
+data NioFieldError = forall a. (Show a) => NioFieldErrorV a
+deriving instance Show (NioFieldError)
+
+data MyNioFieldError =
+    MyNioFieldErrorEmty 
+  | MyNioIncorrectValue Text
+  | MyNioFieldInternalFailure deriving Show
 
 data NioFieldInput =
     NioFieldInputHidden
@@ -26,12 +31,12 @@ data NioFieldInput =
   | NioFieldInputDigit
   deriving Show
 
-data NioFieldView = forall a. Show a => NioFieldView
+data NioFieldView = NioFieldView
     { fvLabel :: Text
     , fvId :: Text
     , fvErrors :: [NioFieldError]
     , fvType :: NioFieldInput
-    , fvValue :: a
+    , fvValue :: String
     }
 
 deriving instance Show NioFieldView
@@ -47,13 +52,13 @@ instance FieldGetter Text where
   getField' = cs
 
 instance FieldGetter Int where
-  getField' _ = 123
+  getField' = read . cs
 
 data MyEither a b = MyLeft a | MyRight b
 type FieldEr = (String, NioFieldError)
 type FormInput = [(String, String)]
 
-runInputForm ::
+runInputForm :: 
      NioForm
   -> (FormInput -> Either [FieldEr] a)
   -> FormInput
@@ -63,12 +68,13 @@ runInputForm nf = fmap (\case
   Left e -> Left $ NioForm { fields = fmap (hydrateErrors e) (fields nf)}
   )
 
-hydrateErrors :: (Eq a, ConvertibleStrings Text a) =>
+hydrateErrors :: forall a. (Eq a, ConvertibleStrings Text a, Show a) =>
     [(a, NioFieldError)]
   ->NioFieldView
   ->NioFieldView
-hydrateErrors e nfv = nfv {
-  fvErrors = (snd) <$> (filter (\(s,_) -> s == cs (fvId nfv)) e)
+hydrateErrors e nf = nf {
+    fvErrors = (snd) <$> (filter ((==) (cs (fvId nf)) . fst) e)
+    --fvErrors = (fmap snd e)
   }
 
 getFormErrors :: FormInput -> [FormInput -> Either (FieldEr) a] -> [FieldEr]
@@ -78,14 +84,17 @@ getFormErrors input functions = catMaybes $ (
     Left e -> Just e
   ) <$> functions
 
-getField :: (Show a, FieldGetter a) => (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
-getField validate key input = do
+getField :: (Show a, FieldGetter a) => NioFieldError -> (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
+getField b' validate key input = do
   let val = case filter ((== key) . fst) input of
         (v':[]) -> pure $ getField' $ snd v'
         [] -> Nothing
         _ -> error "wtf???"
-  case validate (traceShowId val) key of
+  case validate (traceTraceShowId ("getField for key: " ++ key) val) key of
     Nothing -> case val of
       Just x -> Right x
-      Nothing -> Left $ (key, NioFieldInternalFailure)
+      Nothing -> Left $ (key, b')
     Just (s, e) -> Left (s,e)
+
+traceTraceShowId :: Show a => String -> a -> a
+traceTraceShowId x =  trace "" . trace "Func:" . trace x . trace "--" . traceShowId
