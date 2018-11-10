@@ -1,6 +1,11 @@
-executable:
+# executable:
+#   source-dirs: src
+#   main: NioForm.Main.hs
+library:
   source-dirs: src
-  main: Main.hs
+  exposed-modules:
+    - Nioform
+    - NioformInstances
 license-file: LICENSE
 build-type: Simple
 maintainer: Chris Stryczynski
@@ -22,7 +27,7 @@ dependencies:
 - directory
 - pretty-simple
 - string-conversions
-name: app
+name: niobiumcoconut
 version: '0.1.0.0'
 extra-source-files: ChangeLog.md
 author: Chris Stryczynski

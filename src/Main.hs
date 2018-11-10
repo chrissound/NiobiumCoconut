@@ -1,6 +1,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS -Wno-unused-imports #-}
 module Main where
 
 import Data.Text (Text)
@@ -8,10 +9,17 @@ import Control.Monad
 import Text.Pretty.Simple (pPrint)
 import Debug.Trace
 import Data.Foldable
+import NioFormInstances
 
 import NioForm
 
 data TestForm = TestForm Text Text Bool Int deriving Show
+
+data MyNioFieldError =
+    MyNioFieldErrorEmty 
+  | MyNioIncorrectValue Text
+  | MyNioFieldInternalFailure deriving Show
+
 
 main :: IO ()
 main = do
@@ -60,7 +68,7 @@ inputTest = do
       d = myGetField (allRules[isPresent, isEq (== 4) "Not 4"]) "f4"
 
 myGetField :: (Show a, FieldGetter a) => (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
-myGetField = getField (undefined)
+myGetField = fieldValue (undefined)
 
 isPresent :: Maybe b -> a -> Maybe (a, NioFieldError)
 isPresent x k = case x of

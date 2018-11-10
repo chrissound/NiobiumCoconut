@@ -2,15 +2,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module NioForm where
 
 import Data.Text (Text)
 import Data.Maybe (catMaybes)
 import Data.String.Conversions
-import Debug.Trace
 
 data NioForm = NioForm {
   fields :: [NioFieldView]
@@ -18,11 +15,6 @@ data NioForm = NioForm {
 
 data NioFieldError = forall a. (Show a) => NioFieldErrorV a
 deriving instance Show (NioFieldError)
-
-data MyNioFieldError =
-    MyNioFieldErrorEmty 
-  | MyNioIncorrectValue Text
-  | MyNioFieldInternalFailure deriving Show
 
 data NioFieldInput =
     NioFieldInputHidden
@@ -42,19 +34,8 @@ data NioFieldView = NioFieldView
 deriving instance Show NioFieldView
 
 class FieldGetter a where
-  getField' :: String ->  a
+  getField :: String ->  a
 
-instance FieldGetter Bool where
-  getField' "true" = True
-  getField' _ = False
-
-instance FieldGetter Text where
-  getField' = cs
-
-instance FieldGetter Int where
-  getField' = read . cs
-
-data MyEither a b = MyLeft a | MyRight b
 type FieldEr = (String, NioFieldError)
 type FormInput = [(String, String)]
 
@@ -73,28 +54,23 @@ hydrateErrors :: forall a. (Eq a, ConvertibleStrings Text a, Show a) =>
   ->NioFieldView
   ->NioFieldView
 hydrateErrors e nf = nf {
-    fvErrors = (snd) <$> (filter ((==) (cs (fvId nf)) . fst) e)
-    --fvErrors = (fmap snd e)
+    fvErrors = snd <$> filter ((==) (cs (fvId nf)) . fst) e
   }
 
 getFormErrors :: FormInput -> [FormInput -> Either (FieldEr) a] -> [FieldEr]
-getFormErrors input functions = catMaybes $ (
+getFormErrors input = catMaybes .  fmap (
   \x -> case x input of
     Right _ -> Nothing
     Left e -> Just e
-  ) <$> functions
+  )
 
-getField :: (Show a, FieldGetter a) => NioFieldError -> (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
-getField b' validate key input = do
+fieldValue :: (Show a, FieldGetter a) => NioFieldError -> (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
+fieldValue b' validate key input = do
   let val = case filter ((== key) . fst) input of
-        (v':[]) -> pure $ getField' $ snd v'
-        [] -> Nothing
-        _ -> error "wtf???"
-  case validate (traceTraceShowId ("getField for key: " ++ key) val) key of
+        (v':[]) -> pure $ getField $ snd v'
+        _ -> Nothing
+  case validate val key of
     Nothing -> case val of
       Just x -> Right x
       Nothing -> Left $ (key, b')
     Just (s, e) -> Left (s,e)
-
-traceTraceShowId :: Show a => String -> a -> a
-traceTraceShowId x =  trace "" . trace "Func:" . trace x . trace "--" . traceShowId
