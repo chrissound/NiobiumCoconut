@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ab225a6258566d1360edc3e5a2d26f4e8776b2e602f5c7e7b004cd4d29cacd80
+-- hash: ffbc768106f54948d0af3c7ed80e2b8d39c24161405f0924314286cbce4d4b55
 
 name:           niobiumcoconut
 version:        0.1.0.0
@@ -11,7 +13,6 @@ maintainer:     Chris Stryczynski
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-cabal-version:  >= 1.10
 extra-source-files:
     ChangeLog.md
 
@@ -20,9 +21,6 @@ library
       Nioform
       NioformInstances
   other-modules:
-      Main
-      NioForm
-      NioFormInstances
       Paths_niobiumcoconut
   hs-source-dirs:
       src
