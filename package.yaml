@@ -1,31 +1,27 @@
-# executable:
-#   source-dirs: src
-#   main: NioForm.Main.hs
 library:
   source-dirs: src
   exposed-modules:
-    - Nioform
-    - NioformInstances
+    - NioForm
+    - NioFormInstances
 license-file: LICENSE
 build-type: Simple
 maintainer: Chris Stryczynski
 dependencies:
-- base >=4.11 && <4.12
-- yesod-form
+- base >=4.11 && <4.14
 # common
-- lens
-- aeson
+# - lens
+#- aeson
 - bytestring
-- stm
+#- stm
 - split
 - text
-- time
-- thyme
-- binary
-- binary-orphans
-- old-locale
-- directory
-- pretty-simple
+# - time
+# - thyme
+# - binary
+# - binary-orphans
+# - old-locale
+# - directory
+# - pretty-simple
 - string-conversions
 name: niobiumcoconut
 version: '0.1.0.0'

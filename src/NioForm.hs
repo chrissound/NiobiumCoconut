@@ -8,6 +8,8 @@ module NioForm where
 import Data.Text (Text)
 import Data.Maybe (catMaybes)
 import Data.String.Conversions
+import Debug.Trace
+import System.IO.Unsafe
 
 data NioForm = NioForm {
   fields :: [NioFieldView]
@@ -18,6 +20,7 @@ deriving instance Show (NioFieldError)
 
 data NioFieldInput =
     NioFieldInputHidden
+  | NioFieldInputTextShort
   | NioFieldInputText
   | NioFieldInputMultiple [(Text,Text)]
   | NioFieldInputDigit
@@ -39,7 +42,7 @@ class FieldGetter a where
 type FieldEr = (String, NioFieldError)
 type FormInput = [(String, String)]
 
-runInputForm :: 
+runInputForm ::
      NioForm
   -> (FormInput -> Either [FieldEr] a)
   -> FormInput
@@ -57,20 +60,54 @@ hydrateErrors e nf = nf {
     fvErrors = snd <$> filter ((==) (cs (fvId nf)) . fst) e
   }
 
-getFormErrors :: FormInput -> [FormInput -> Either (FieldEr) a] -> [FieldEr]
+getFormErrors :: t -> [t -> Either a b] -> [a]
 getFormErrors input = catMaybes .  fmap (
   \x -> case x input of
     Right _ -> Nothing
     Left e -> Just e
   )
 
+getFormErrorsM :: Monad m => v -> [v -> m (Either a b)] -> m [a]
+getFormErrorsM fv l = do
+  vars <- sequence $ (\x -> x fv) <$> l
+  pure . catMaybes $  (\x -> case x of Right _ -> Nothing; Left e -> Just e) <$> vars
+
+
+-- getFormErrorsM :: Monad m => t -> [t -> m (Either a b)] -> m [a]
+-- getFormErrorsM input = mapM (
+--   \x' -> case x' input of
+--     Right _ -> Nothing
+--     Left e -> Just e
+-- )
+
 fieldValue :: (Show a, FieldGetter a) => NioFieldError -> (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
 fieldValue b' validate key input = do
+  pure $! unsafePerformIO $ do
+    print "debug fieldValue: "
+    print $ key
+  let val = case filter ((== key) . fst) input of
+        (v':[]) -> pure $ getField $ snd v'
+        _ -> Nothing
+  case validate (mydbg'' "fieldValue val" val) key of
+    Nothing -> case val of
+      Just x -> Right x
+      Nothing -> Left $ (key, b')
+    Just (s, e) -> Left (s,e)
+
+
+fieldValueIO :: (Show a, FieldGetter a) => NioFieldError -> (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> IO (Either (FieldEr) a)
+fieldValueIO b' validate key input = do
   let val = case filter ((== key) . fst) input of
         (v':[]) -> pure $ getField $ snd v'
         _ -> Nothing
   case validate val key of
     Nothing -> case val of
-      Just x -> Right x
-      Nothing -> Left $ (key, b')
-    Just (s, e) -> Left (s,e)
+      Just x -> pure $ Right x
+      Nothing -> pure $ Left $ (key, b')
+    Just (s, e) -> pure $ Left (s,e)
+
+mydbg'' :: Show a => String -> a -> a
+mydbg'' s = traceShow
+  <$> ((++) s . show)
+  <*> id
+-- mydbg _ = id
