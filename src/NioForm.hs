@@ -47,17 +47,56 @@ runInputForm ::
   -> (FormInput -> Either [FieldEr] a)
   -> FormInput
   -> Either NioForm a
-runInputForm nf = fmap (\case
+runInputForm nf fieldValidators formInput = case fieldValidators formInput of
   Right x -> Right x
-  Left e -> Left $ NioForm { fields = fmap (hydrateErrors e) (fields nf)}
-  )
+  Left e -> Left $ NioForm {
+          fields = fmap (hydrateValues formInput . hydrateErrors e) (fields nf)
+        }
+
+runInputFormM :: (Monad m) =>
+     NioForm
+  -> (FormInput -> m (Either [FieldEr] a))
+  -> FormInput
+  -> m (Either NioForm a)
+runInputFormM nf fieldValidators formInput = fieldValidators formInput >>= \case
+  Right x -> pure $ Right x
+  Left e -> pure $ Left $ NioForm {
+          fields = fmap (hydrateValues formInput . hydrateErrors e) (fields nf)
+        }
+--runInputForm nf fieldValidators formInput = fmap validateField fieldValidators $ formInput
+  -- where
+  --   validateField (Right x) = Right x
+  --   validateField (Left e) = Left $ NioForm {
+  --         fields = fmap (hydrateValues formInput . hydrateErrors e) (fields nf)
+  --       }
+
+-- runInputFormIO ::
+--      NioForm
+--   -> (FormInput -> IO (Either [FieldEr] a))
+--   -> FormInput
+--   -> IO (Either NioForm a
+-- runInputFormIO nf fi fii = fmap (\case
+--   Right x -> pure $ Right x
+--   Left e -> pure $
+--     Left $
+--     NioForm
+--     { fields = (fmap (hydrateValues fii . hydrateErrors e) (fields nf))}
+--   ) fi fii
+
+hydrateValues :: FormInput -> NioFieldView -> NioFieldView
+hydrateValues fi nf = nf {
+    fvValue = do
+        case filter ((== (fvId nf)) . cs . fst) fi of
+          (v':_) -> snd v'
+          _ -> fvValue nf
+  }
 
 hydrateErrors :: forall a. (Eq a, ConvertibleStrings Text a, Show a) =>
     [(a, NioFieldError)]
   ->NioFieldView
   ->NioFieldView
 hydrateErrors e nf = nf {
-    fvErrors = snd <$> filter ((==) (cs (fvId nf)) . fst) e
+      fvErrors = snd <$> filter ((==) (cs (fvId nf)) . fst) e
   }
 
 getFormErrors :: t -> [t -> Either a b] -> [a]
