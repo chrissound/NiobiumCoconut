@@ -1,15 +1,16 @@
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module NioForm where
 
 import Data.Text (Text)
 import Data.Maybe (catMaybes)
 import Data.String.Conversions
-import Debug.Trace
-import System.IO.Unsafe
+-- import Debug.Trace
 
 data NioForm = NioForm {
   fields :: [NioFieldView]
@@ -39,6 +40,9 @@ deriving instance Show NioFieldView
 class FieldGetter a where
   getField :: String ->  a
 
+class (Monad m) => FieldGetterM m a where
+  getFieldM :: String -> m a
+
 type FieldEr = (String, NioFieldError)
 type FormInput = [(String, String)]
 
@@ -63,25 +67,6 @@ runInputFormM nf fieldValidators formInput = fieldValidators formInput >>= \case
   Left e -> pure $ Left $ NioForm {
           fields = fmap (hydrateValues formInput . hydrateErrors e) (fields nf)
         }
---runInputForm nf fieldValidators formInput = fmap validateField fieldValidators $ formInput
-  -- where
-  --   validateField (Right x) = Right x
-  --   validateField (Left e) = Left $ NioForm {
-  --         fields = fmap (hydrateValues formInput . hydrateErrors e) (fields nf)
-  --       }
-
--- runInputFormIO ::
---      NioForm
---   -> (FormInput -> IO (Either [FieldEr] a))
---   -> FormInput
---   -> IO (Either NioForm a
--- runInputFormIO nf fi fii = fmap (\case
---   Right x -> pure $ Right x
---   Left e -> pure $
---     Left $
---     NioForm
---     { fields = (fmap (hydrateValues fii . hydrateErrors e) (fields nf))}
---   ) fi fii
 
 hydrateValues :: FormInput -> NioFieldView -> NioFieldView
 hydrateValues fi nf = nf {
@@ -112,41 +97,43 @@ getFormErrorsM fv l = do
   pure . catMaybes $  (\x -> case x of Right _ -> Nothing; Left e -> Just e) <$> vars
 
 
--- getFormErrorsM :: Monad m => t -> [t -> m (Either a b)] -> m [a]
--- getFormErrorsM input = mapM (
---   \x' -> case x' input of
---     Right _ -> Nothing
---     Left e -> Just e
--- )
-
 fieldValue :: (Show a, FieldGetter a) => NioFieldError -> (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
 fieldValue b' validate key input = do
-  pure $! unsafePerformIO $ do
-    print "debug fieldValue: "
-    print $ key
-  let val = case filter ((== key) . fst) input of
-        (v':[]) -> pure $ getField $ snd v'
+  let val'' = case filter ((== key) . fst) input of
+        (v':[]) -> pure $ snd v'
         _ -> Nothing
+  let val = (getField) <$> val''
   case validate (mydbg'' "fieldValue val" val) key of
     Nothing -> case val of
       Just x -> Right x
       Nothing -> Left $ (key, b')
     Just (s, e) -> Left (s,e)
 
+runMaybeM :: Monad m => Maybe (m a) -> m (Maybe a)
+runMaybeM = \case
+  (Just mia) -> Just <$> mia
+  Nothing -> pure Nothing
 
-fieldValueIO :: (Show a, FieldGetter a) => NioFieldError -> (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> IO (Either (FieldEr) a)
-fieldValueIO b' validate key input = do
-  let val = case filter ((== key) . fst) input of
-        (v':[]) -> pure $ getField $ snd v'
+fieldValueM :: forall m a . (Monad m, Show a, FieldGetterM m a) =>
+  NioFieldError ->
+  (Maybe a -> String -> Maybe (FieldEr)) ->
+  String ->
+  FormInput ->
+  m (Either (FieldEr) a)
+fieldValueM b' validate key input = do
+  let val'' = case filter ((== key) . fst) input of
+        (v':[]) -> pure $ snd v'
         _ -> Nothing
-  case validate val key of
+  val <- runMaybeM (getFieldM <$> val'')
+  case (validate (val :: Maybe (a)) key) of
     Nothing -> case val of
       Just x -> pure $ Right x
       Nothing -> pure $ Left $ (key, b')
     Just (s, e) -> pure $ Left (s,e)
 
+
 mydbg'' :: Show a => String -> a -> a
-mydbg'' s = traceShow
-  <$> ((++) s . show)
-  <*> id
--- mydbg _ = id
+-- mydbg'' s = traceShow
+--   <$> ((++) s . show)
+--   <*> id
+mydbg'' _ = id
