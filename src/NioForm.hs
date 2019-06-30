@@ -25,6 +25,7 @@ data NioFieldInput =
   | NioFieldInputText
   | NioFieldInputMultiple [(Text,Text)]
   | NioFieldInputDigit
+  | NioFieldInputFile
   deriving Show
 
 data NioFieldView = NioFieldView
