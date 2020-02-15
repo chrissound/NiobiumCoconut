@@ -10,13 +10,17 @@ module NioForm where
 import Data.Text (Text)
 import Data.Maybe (catMaybes)
 import Data.String.Conversions
+import Data.Function
 -- import Debug.Trace
 
 data NioForm = NioForm {
   fields :: [NioFieldView]
-  } deriving Show
+  } deriving (Show, Eq)
 
-data NioFieldError = forall a. (Show a) => NioFieldErrorV a
+data NioFieldError = forall a. (Show a, Eq a) => NioFieldErrorV a
+instance Eq NioFieldError where
+  (==) = on (==) NioFieldErrorV
+
 deriving instance Show (NioFieldError)
 
 data NioFieldInput =
@@ -26,7 +30,7 @@ data NioFieldInput =
   | NioFieldInputMultiple [(Text,Text)]
   | NioFieldInputDigit
   | NioFieldInputFile
-  deriving Show
+  deriving (Show, Eq)
 
 data NioFieldView = NioFieldView
     { fvLabel :: Text
@@ -34,7 +38,7 @@ data NioFieldView = NioFieldView
     , fvErrors :: [NioFieldError]
     , fvType :: NioFieldInput
     , fvValue :: String
-    }
+    } deriving Eq
 
 deriving instance Show NioFieldView
 
@@ -126,7 +130,7 @@ fieldValueM b' validate key input = do
         (v':[]) -> pure $ snd v'
         _ -> Nothing
   val <- runMaybeM (getFieldM <$> val'')
-  case (validate (val :: Maybe (a)) key) of
+  case (validate (val :: Maybe a) key) of
     Nothing -> case val of
       Just x -> pure $ Right x
       Nothing -> pure $ Left $ (key, b')

@@ -1,3 +1,8 @@
+executables:
+  test:
+    main: Test.hs
+    source-dirs: src
+    ghc-options: -Wall -O2
 library:
   source-dirs: src
   exposed-modules:
@@ -8,21 +13,14 @@ build-type: Simple
 maintainer: Chris Stryczynski
 dependencies:
 - base >=4.11 && <4.14
-# common
-# - lens
-#- aeson
+- transformers
 - bytestring
-#- stm
 - split
 - text
-# - time
-# - thyme
-# - binary
-# - binary-orphans
-# - old-locale
-# - directory
-# - pretty-simple
 - string-conversions
+- HUnit
+- tasty
+- tasty-hunit
 name: niobiumcoconut
 version: '0.1.0.0'
 extra-source-files: ChangeLog.md
