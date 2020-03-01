@@ -10,46 +10,13 @@ module NioForm where
 import Data.Text (Text)
 import Data.Maybe (catMaybes)
 import Data.String.Conversions
-import Data.Function
+import Types
+
 -- import Debug.Trace
 
-data NioForm = NioForm {
-  fields :: [NioFieldView]
-  } deriving (Show, Eq)
-
-data NioFieldError = forall a. (Show a, Eq a) => NioFieldErrorV a
-instance Eq NioFieldError where
-  (==) = on (==) NioFieldErrorV
-
-deriving instance Show (NioFieldError)
-
-data NioFieldInput =
-    NioFieldInputHidden
-  | NioFieldInputTextShort
-  | NioFieldInputText
-  | NioFieldInputMultiple [(Text,Text)]
-  | NioFieldInputDigit
-  | NioFieldInputFile
-  deriving (Show, Eq)
-
-data NioFieldView = NioFieldView
-    { fvLabel :: Text
-    , fvId :: Text
-    , fvErrors :: [NioFieldError]
-    , fvType :: NioFieldInput
-    , fvValue :: String
-    } deriving Eq
-
-deriving instance Show NioFieldView
 
 class FieldGetter a where
   getField :: String ->  a
-
-class (Monad m) => FieldGetterM m a where
-  getFieldM :: String -> m a
-
-type FieldEr = (String, NioFieldError)
-type FormInput = [(String, String)]
 
 runInputForm ::
      NioForm
@@ -114,27 +81,6 @@ fieldValue b' validate key input = do
       Nothing -> Left $ (key, b')
     Just (s, e) -> Left (s,e)
 
-runMaybeM :: Monad m => Maybe (m a) -> m (Maybe a)
-runMaybeM = \case
-  (Just mia) -> Just <$> mia
-  Nothing -> pure Nothing
-
-fieldValueM :: forall m a . (Monad m, Show a, FieldGetterM m a) =>
-  NioFieldError ->
-  (Maybe a -> String -> Maybe (FieldEr)) ->
-  String ->
-  FormInput ->
-  m (Either (FieldEr) a)
-fieldValueM b' validate key input = do
-  let val'' = case filter ((== key) . fst) input of
-        (v':[]) -> pure $ snd v'
-        _ -> Nothing
-  val <- runMaybeM (getFieldM <$> val'')
-  case (validate (val :: Maybe a) key) of
-    Nothing -> case val of
-      Just x -> pure $ Right x
-      Nothing -> pure $ Left $ (key, b')
-    Just (s, e) -> pure $ Left (s,e)
 
 
 mydbg'' :: Show a => String -> a -> a

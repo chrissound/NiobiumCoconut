@@ -20,6 +20,8 @@ import Test.Tasty.HUnit
 import Data.Either
 
 import NioForm
+import NioFormM
+import Types
 
 data TestForm = TestForm Text Text Bool Int deriving (Show, Eq)
 data TestForm2 = TestForm2 Text Text deriving (Show, Eq)
