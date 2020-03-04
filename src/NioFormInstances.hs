@@ -13,14 +13,15 @@ import Data.String.Conversions
 import NioForm
 
 instance FieldGetter Bool where
-  getField "true" = True
-  getField _ = False
+  getField "true" = Right $ True
+  getField "false" = Right $ False
+  getField _ = Left "NioInternal error: Invalid boolean value"
 
 instance FieldGetter String where
-  getField = id
+  getField = Right . id
 
 instance FieldGetter Text where
-  getField = cs
+  getField = Right . cs
 
 instance FieldGetter Int where
-  getField = read . cs
+  getField = Right . read . cs

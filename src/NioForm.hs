@@ -16,7 +16,7 @@ import Types
 
 
 class FieldGetter a where
-  getField :: String ->  a
+  getField :: String -> Either String a
 
 runInputForm ::
      NioForm
@@ -69,7 +69,11 @@ getFormErrorsM fv l = do
   pure . catMaybes $  (\x -> case x of Right _ -> Nothing; Left e -> Just e) <$> vars
 
 
-fieldValue :: (Show a, FieldGetter a) => NioFieldError -> (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
+fieldValue :: (Show a, FieldGetter a) =>
+     NioFieldError
+  -> NioValidateField a
+  -> String
+  -> FormInput -> Either (FieldEr) a
 fieldValue b' validate key input = do
   let val'' = case filter ((== key) . fst) input of
         (v':[]) -> pure $ snd v'
@@ -77,7 +81,8 @@ fieldValue b' validate key input = do
   let val = (getField) <$> val''
   case validate (mydbg'' "fieldValue val" val) key of
     Nothing -> case val of
-      Just x -> Right x
+      Just (Right x) -> Right x
+      Just (Left e) -> Left $ (key, NioFieldErrorV e)
       Nothing -> Left $ (key, b')
     Just (s, e) -> Left (s,e)
 

@@ -15,6 +15,7 @@ import Data.Foldable
 import NioFormInstances
 import Data.Bifunctor
 import Data.Text
+import Data.String.Conversions
 import Test.Tasty
 import Test.Tasty.HUnit
 import Data.Either
@@ -41,44 +42,45 @@ myTests = [
         (True @?= (isLeft x))
     , testCase "more success" $ do
         let x = runInputForm testForm inputTestP' [("f1", "test"),("f2", "test"), ("f3","true"), ("f4", "4")]
+        print x
         (True @?= (isRight x))
-    , testCase "more success2 " $ do
-        x <- runInputFormM testForm inputTestP [
-            ("f1", "test")
-          , ("f2", "wohoo")
-          , ("f3","true")
-          , ("f4", "4")
-          ]
-        (True @?= (isRight x))
-                        -- fields = [
-                        --       NioFieldView {
-                        --           fvLabel = "Test"
-                        --         , fvId = "f1"
-                        --         , fvErrors = []
-                        --         , fvType = NioFieldInputText
-                        --         , fvValue = "test"}
-                        --     , NioFieldView {
-                        --           fvLabel = "Test 2"
-                        --         , fvId = "f2"
-                        --         , fvErrors = [NioFieldErrorV MyNioFieldErrorEmty]
-                        --         , fvType = NioFieldInputText
-                        --         , fvValue = ""}
-                        --     , NioFieldView {
-                        --           fvLabel = "Test 3"
-                        --         , fvId = "f3"
-                        --         , fvErrors = []
-                        --         , fvType = NioFieldInputMultiple [("a"
-                        --         ,"a")
-                        --         ,("b"
-                        --         ,"b")]
-                        --         , fvValue = "true"}
-                        --     , NioFieldView {
-                        --           fvLabel = "Test4"
-                        --         , fvId = "f4"
-                        --         , fvErrors = []
-                        --         , fvType = NioFieldInputDigit
-                        --         , fvValue = "4"}]
-                        -- }))
+    -- , testCase "more success2 " $ do
+    --     x <- runInputFormM testForm inputTestP [
+    --         ("f1", "test")
+    --       , ("f2", "wohoo")
+    --       , ("f3","true")
+    --       , ("f4", "4")
+    --       ]
+    --     (True @?= (isRight x))
+    --                     -- fields = [
+    --                     --       NioFieldView {
+    --                     --           fvLabel = "Test"
+    --                     --         , fvId = "f1"
+    --                     --         , fvErrors = []
+    --                     --         , fvType = NioFieldInputText
+    --                     --         , fvValue = "test"}
+    --                     --     , NioFieldView {
+    --                     --           fvLabel = "Test 2"
+    --                     --         , fvId = "f2"
+    --                     --         , fvErrors = [NioFieldErrorV MyNioFieldErrorEmty]
+    --                     --         , fvType = NioFieldInputText
+    --                     --         , fvValue = ""}
+    --                     --     , NioFieldView {
+    --                     --           fvLabel = "Test 3"
+    --                     --         , fvId = "f3"
+    --                     --         , fvErrors = []
+    --                     --         , fvType = NioFieldInputMultiple [("a"
+    --                     --         ,"a")
+    --                     --         ,("b"
+    --                     --         ,"b")]
+    --                     --         , fvValue = "true"}
+    --                     --     , NioFieldView {
+    --                     --           fvLabel = "Test4"
+    --                     --         , fvId = "f4"
+    --                     --         , fvErrors = []
+    --                     --         , fvType = NioFieldInputDigit
+    --                     --         , fvValue = "4"}]
+    --                     -- }))
         ]
 
 main :: IO ()
@@ -137,39 +139,49 @@ inputTest = do
 --       d = pure . myGetField
 --           (allRules[isPresent, isEq (== 4) "Not 4"]) "f4"       :: FormInput -> IO (Either FieldEr a)
 
-myGetField :: (Show a, FieldGetter a) => (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> Either (FieldEr) a
+myGetField :: (Show a, FieldGetter a) =>
+     NioValidateField a
+  -> NioFormKey
+  -> FormInput
+  -> Either (FieldEr) a
 myGetField = fieldValue (undefined)
 
-myGetFieldIO :: (Monad m, Show a, FieldGetterM m a) => (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> m (Either (FieldEr) a)
-myGetFieldIO = fieldValueM (undefined)
+-- myGetFieldIO :: (Monad m, Show a, FieldGetterM m a) => (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> m (Either (FieldEr) a)
+-- myGetFieldIO = fieldValueM (undefined)
 
-isPresent :: Maybe b -> a -> Maybe (a, NioFieldError)
-isPresent x k = case x of
+-- isPresent :: Maybe (Either String a) -> NioFormKey -> Maybe FieldEr
+isPresent :: NioValidateField a
+isPresent v k = case v of
   Just _ -> Nothing
   Nothing -> Just (k, NioFieldErrorV $ MyNioFieldErrorEmty)
 
-isEq :: (b -> Bool) -> Text -> Maybe b -> a -> Maybe (a, NioFieldError)
-isEq f t x k = case x of
-  Just x' -> if f x' then Nothing else Just (k, NioFieldErrorV $ MyNioIncorrectValue $  t)
-  _ -> Just (k, NioFieldErrorV $ MyNioIncorrectValue "Not true")
+isEq :: (a -> Bool)
+  -> Text
+  -> NioValidateField a
+isEq rule failMsg v k = case v of
+  Just (Right v') -> case rule v' of
+    True ->             Nothing
+    False ->            Just (k, NioFieldErrorV $ MyNioIncorrectValue failMsg)
+  Just (Left x') ->     Just (k, NioFieldErrorV $ MyNioIncorrectValue $ cs x')
+  Nothing ->            Just (k, NioFieldErrorV $ MyNioFieldErrorEmty )
 
 allRules ::  [Maybe b -> a -> Maybe (a, NioFieldError)] -> Maybe b -> a -> Maybe (a, NioFieldError)
 allRules r v k = asum $ fmap (\r' -> r' v k) r
 
-inputTestP :: forall. FormInput -> IO (Either ([FieldEr]) TestForm2)
-inputTestP fi = do
-    allErrors <- collect fi
-    (first $ const $ allErrors) <$>
-      ((
-        ((liftM2 . liftM2) TestForm2) <$> a <*> b
-      ) fi)
-  where
-      collect z = mconcat [
-          getFormErrorsM z [a]
-        , getFormErrorsM z [b]
-        ]
-      a = (pure) <$> myGetField (isPresent) "f1" :: FormInput -> IO (Either FieldEr Text)
-      b = myGetFieldIO (isPresent) "f2" :: FormInput -> IO (Either FieldEr Text)
+-- inputTestP :: forall. FormInput -> IO (Either ([FieldEr]) TestForm2)
+-- inputTestP fi = do
+--     allErrors <- collect fi
+--     (first $ const $ allErrors) <$>
+--       ((
+--         ((liftM2 . liftM2) TestForm2) <$> a <*> b
+--       ) fi)
+--   where
+--       collect z = mconcat [
+--           getFormErrorsM z [a]
+--         , getFormErrorsM z [b]
+--         ]
+--       a = (pure) <$> myGetField (isPresent) "f1" :: FormInput -> IO (Either FieldEr Text)
+--       b = myGetFieldIO (isPresent) "f2" :: FormInput -> IO (Either FieldEr Text)
 
 instance FieldGetterM IO Text where
   getFieldM x = pure (pack  $ (x ++)  " www")
@@ -188,7 +200,5 @@ inputTestP' fi =
 
       a = myGetField (isPresent) "f1"
       b = myGetField (isPresent) "f2"
-      c = myGetField
-          (allRules[isPresent, isEq (== True) "Not true"]) "f3"
-      d = myGetField
-          (allRules[isPresent, isEq (== 4) "Not 4"]) "f4"
+      c = myGetField (isEq (== True) "Not true") "f3"
+      d = myGetField (isEq (== 4) "Not 4") "f4"

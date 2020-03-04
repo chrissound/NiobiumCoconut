@@ -38,5 +38,7 @@ data NioFieldView = NioFieldView
 
 deriving instance Show NioFieldView
 
-type FieldEr = (String, NioFieldError)
+type FieldEr = (NioFormKey, NioFieldError)
 type FormInput = [(String, String)]
+type NioValidateField a = Maybe (Either String a) -> NioFormKey -> Maybe (FieldEr)
+type NioFormKey = String
