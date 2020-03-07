@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Types where
+module NioFormTypes where
 
 import Data.Text (Text)
 import Data.Function

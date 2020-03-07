@@ -8,7 +8,7 @@
 module NioFormM where
 
 import NioForm
-import Types
+import NioFormTypes
 
 class (Monad m) => FieldGetterM m a where
   getFieldM :: String -> m (NioGetField a)
@@ -35,7 +35,7 @@ runInputFormM nf fieldValidators formInput = fieldValidators formInput >>= \case
 fieldValueM :: forall m a . (Monad m, Show a, FieldGetterM m a) =>
   NioFieldError ->
   NioValidateField a ->
-  String ->
+  NioFormKey ->
   FormInput ->
   m (Either FieldEr a)
 fieldValueM b' validate key input = do

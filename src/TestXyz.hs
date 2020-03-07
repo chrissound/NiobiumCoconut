@@ -2,7 +2,7 @@ module TestXyz where
 
 import NioForm
 -- import NioFormInstances
-import Types
+import NioFormTypes
 import Data.Text
 import Data.String.Conversions
 import Data.Foldable

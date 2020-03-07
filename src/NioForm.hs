@@ -10,9 +10,7 @@ module NioForm where
 import Data.Text (Text)
 import Data.Maybe (catMaybes)
 import Data.String.Conversions
-import Types
-
--- import Debug.Trace
+import NioFormTypes
 
 
 class FieldGetter a where
@@ -61,7 +59,7 @@ getFormErrorsM fv l = do
 fieldValue :: (Show a, FieldGetter a) =>
      NioFieldError
   -> NioValidateField a
-  -> String
+  -> NioFormKey
   -> FormInput -> Either (FieldEr) a
 fieldValue b' validate key input = do
   let val'' = case filter ((== key) . fst) input of

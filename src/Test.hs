@@ -23,7 +23,7 @@ import Data.Either
 
 import NioForm
 import NioFormM
-import Types
+import NioFormTypes
 
 import TestXyz
 import TestMonadic
