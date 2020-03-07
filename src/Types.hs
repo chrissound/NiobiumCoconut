@@ -42,3 +42,4 @@ type FieldEr = (NioFormKey, NioFieldError)
 type FormInput = [(String, String)]
 type NioValidateField a = Maybe (Either String a) -> NioFormKey -> Maybe (FieldEr)
 type NioFormKey = String
+type NioGetField a = Either String a

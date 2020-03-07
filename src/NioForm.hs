@@ -29,17 +29,6 @@ runInputForm nf fieldValidators formInput = case fieldValidators formInput of
           fields = fmap (hydrateValues formInput . hydrateErrors e) (fields nf)
         }
 
-runInputFormM :: (Monad m) =>
-     NioForm
-  -> (FormInput -> m (Either [FieldEr] a))
-  -> FormInput
-  -> m (Either NioForm a)
-runInputFormM nf fieldValidators formInput = fieldValidators formInput >>= \case
-  Right x -> pure $ Right x
-  Left e -> pure $ Left $ NioForm {
-          fields = fmap (hydrateValues formInput . hydrateErrors e) (fields nf)
-        }
-
 hydrateValues :: FormInput -> NioFieldView -> NioFieldView
 hydrateValues fi nf = nf {
     fvValue = do

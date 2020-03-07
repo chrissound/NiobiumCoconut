@@ -4,13 +4,15 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS -Wno-orphans #-}
 
 module NioFormInstances where
 
-import Data.Text (Text)
+import Data.Text
 import Data.String.Conversions
 import NioForm
+import NioFormM
 
 instance FieldGetter Bool where
   getField "true" = Right $ True
@@ -25,3 +27,6 @@ instance FieldGetter Text where
 
 instance FieldGetter Int where
   getField = Right . read . cs
+
+instance FieldGetterM IO Text where
+  getFieldM x = pure $ Right $ pack x

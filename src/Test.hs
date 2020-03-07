@@ -1,10 +1,11 @@
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+-- {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleContexts #-}
+-- {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS -Wno-unused-imports #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+-- {-# LANGUAGE MultiParamTypeClasses #-}
 {-# Options -Wno-orphans #-}
+
 module Test where
 
 import Data.Text (Text)
@@ -24,18 +25,14 @@ import NioForm
 import NioFormM
 import Types
 
-data TestForm = TestForm Text Text Bool Int deriving (Show, Eq)
-data TestForm2 = TestForm2 Text Text deriving (Show, Eq)
+import TestXyz
+import TestMonadic
 
-data MyNioFieldError =
-    MyNioFieldErrorEmty
-  | MyNioIncorrectValue Text
-  | MyNioFieldInternalFailure deriving (Show, Eq)
 
 myTests :: [TestTree]
 myTests = [
       testCase "initial" $ do
-          x <-  runInputFormM testForm inputTest [("f1", "test"), ("f3","true"), ("f4", "4")]
+          x <-  runInputFormM testForm inputTest [("f1", "Test"), ("f2","Abc")]
           (x @?= Right (TestForm2 "Test" "Abc"))
     , testCase "failure" $ do
         let x = runInputForm testForm inputTestP' [("f1", "test"), ("f3","true"), ("f4", "4")]
@@ -87,8 +84,7 @@ main :: IO ()
 main = defaultMain $ testGroup "Tests:" myTests
 
 renderNioForm :: NioForm -> IO ()
-renderNioForm nf = forM_ (fields nf) $ \x -> do
-  print x
+renderNioForm nf = forM_ (fields nf) print
 
 emptyError :: [NioFieldError]
 emptyError = []
@@ -103,88 +99,18 @@ testForm = NioForm [
      , NioFieldView "Test4" "f4" emptyError NioFieldInputDigit (show 0)
   ]
 
-inputTest :: forall. FormInput -> IO (Either ([FieldEr]) TestForm2)
-inputTest = do
-      ((liftM2 TestForm2) <$> a <*> b) >>= \case
-        Right x' -> pure . pure $ Right x' -- const 5 -- undefined --pure $ pure (x')
-        Left e -> id (e  :: FormInput -> IO (Either ([FieldEr]) TestForm2))
+inputTest :: FormInput -> IO (Either [FieldEr] TestForm2)
+inputTest fi = do
+    allErrors' <- (mconcat <$> sequence (allErrors :: [IO [FieldEr]]))
+    (first $ const allErrors')
+      <$> ((liftM2 . liftM2) TestForm2 <$> a <*> b) fi
   where
-      a _ = (pure "Test")
-
-        -- myGetFieldIO
-        -- (pure "Test")  -- :: FormInput -> Either (FormInput -> IO (Either [FieldEr] TestForm2)) Text
-      b = do
-        const $ pure "Abc"
--- inputTest :: FormInput -> IO (Either ([FieldEr]) TestForm)
--- inputTest = do
---           (fmap pure)
---       <$> (liftM4 TestForm)
---       <$> a <*> b <*> c <*> d
---       >>= \case
---         Right x' -> pure $ pure (x')
---         Left _ -> undefined
---       -- Left _ -> (\z -> do
---       --               Left $ traceShowId $ mconcat [
---       --                    getFormErrors z [a]
---       --                  , getFormErrors z [b]
---       --                  , getFormErrors z [c]
---       --                  , getFormErrors z [d]
---       --                  ]
---       --   )
---   where
---       a = myGetFieldIO (isPresent) "f1"                         :: FormInput -> IO (Either FieldEr a)
---       b = pure . myGetField (isPresent) "f2"                    :: FormInput -> IO (Either FieldEr a)
---       c = pure . myGetField
---           (allRules[isPresent, isEq (== True) "Not true"]) "f3" :: FormInput -> IO (Either FieldEr a)
---       d = pure . myGetField
---           (allRules[isPresent, isEq (== 4) "Not 4"]) "f4"       :: FormInput -> IO (Either FieldEr a)
-
-myGetField :: (Show a, FieldGetter a) =>
-     NioValidateField a
-  -> NioFormKey
-  -> FormInput
-  -> Either (FieldEr) a
-myGetField = fieldValue (undefined)
-
--- myGetFieldIO :: (Monad m, Show a, FieldGetterM m a) => (Maybe a -> String -> Maybe (FieldEr)) -> String -> FormInput -> m (Either (FieldEr) a)
--- myGetFieldIO = fieldValueM (undefined)
-
--- isPresent :: Maybe (Either String a) -> NioFormKey -> Maybe FieldEr
-isPresent :: NioValidateField a
-isPresent v k = case v of
-  Just _ -> Nothing
-  Nothing -> Just (k, NioFieldErrorV $ MyNioFieldErrorEmty)
-
-isEq :: (a -> Bool)
-  -> Text
-  -> NioValidateField a
-isEq rule failMsg v k = case v of
-  Just (Right v') -> case rule v' of
-    True ->             Nothing
-    False ->            Just (k, NioFieldErrorV $ MyNioIncorrectValue failMsg)
-  Just (Left x') ->     Just (k, NioFieldErrorV $ MyNioIncorrectValue $ cs x')
-  Nothing ->            Just (k, NioFieldErrorV $ MyNioFieldErrorEmty )
-
-allRules ::  [Maybe b -> a -> Maybe (a, NioFieldError)] -> Maybe b -> a -> Maybe (a, NioFieldError)
-allRules r v k = asum $ fmap (\r' -> r' v k) r
-
--- inputTestP :: forall. FormInput -> IO (Either ([FieldEr]) TestForm2)
--- inputTestP fi = do
---     allErrors <- collect fi
---     (first $ const $ allErrors) <$>
---       ((
---         ((liftM2 . liftM2) TestForm2) <$> a <*> b
---       ) fi)
---   where
---       collect z = mconcat [
---           getFormErrorsM z [a]
---         , getFormErrorsM z [b]
---         ]
---       a = (pure) <$> myGetField (isPresent) "f1" :: FormInput -> IO (Either FieldEr Text)
---       b = myGetFieldIO (isPresent) "f2" :: FormInput -> IO (Either FieldEr Text)
-
-instance FieldGetterM IO Text where
-  getFieldM x = pure (pack  $ (x ++)  " www")
+    a = (pure <$> myGetField (isPresent) "f1") :: FormInput -> IO (Either FieldEr Text)
+    b = myGetFieldIO (isPresent) "f2"
+    allErrors = [
+        getFormErrorsM fi [a]
+      , getFormErrorsM fi [b]
+                ]
 
 inputTestP' :: FormInput -> Either ([FieldEr]) TestForm
 inputTestP' fi =
@@ -198,7 +124,8 @@ inputTestP' fi =
                         , getFormErrors z [d]
                         ]
 
-      a = myGetField (isPresent) "f1"
+      a = myGetField (isPresent) "f1" :: FormInput -> Either FieldEr Text
       b = myGetField (isPresent) "f2"
       c = myGetField (isEq (== True) "Not true") "f3"
       d = myGetField (isEq (== 4) "Not 4") "f4"
+
