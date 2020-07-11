@@ -1,5 +1,7 @@
 # NiobiumCoconut
 
+## Limitations
+
 This is a library I started ages as a side project of sorts. I'm not actually sure how usable it is and whether it has bugs / limitations. I just decided to share it. It basically started after running into some frustration with the digestive-functors library.
 
 It's quite a flexible form validation library. You can validate practically anything, and even use IO etc for validation, a field value can be validated by looking at all values of the input. It has someeee type cleverness using existential types.

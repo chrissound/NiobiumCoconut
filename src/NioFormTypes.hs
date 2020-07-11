@@ -7,7 +7,7 @@
 module NioFormTypes where
 
 import Data.Text (Text)
-import Data.Function
+-- import Data.Function
 
 data NioForm = NioForm {
   fields :: [NioFieldView]
@@ -15,7 +15,10 @@ data NioForm = NioForm {
 
 data NioFieldError = forall a. (Show a, Eq a) => NioFieldErrorV a
 instance Eq NioFieldError where
-  (==) = on (==) NioFieldErrorV
+  (==) (NioFieldErrorV a) (NioFieldErrorV b) = show a == show b
+
+nioerrorFailRetriveOrError :: NioFieldError
+nioerrorFailRetriveOrError = NioFieldErrorV "Failed to retrieve or return error"
 
 deriving instance Show (NioFieldError)
 
@@ -25,6 +28,7 @@ data NioFieldInput =
   | NioFieldInputText
   | NioFieldInputMultiple [(Text,Text)]
   | NioFieldInputDigit
+  | NioFieldInputBool (Bool)
   | NioFieldInputFile
   deriving (Show, Eq)
 

@@ -17,7 +17,7 @@ myGetField :: (Show a, FieldGetter a) =>
   -> NioFormKey
   -> FormInput
   -> Either (FieldEr) a
-myGetField = fieldValue (undefined)
+myGetField = fieldValue
 
 data TestForm = TestForm Text Text Bool Int deriving (Show, Eq)
 data TestForm2 = TestForm2 Text Text deriving (Show, Eq)
@@ -37,5 +37,8 @@ isEq rule failMsg v k = case v of
   Just (Left x') ->     Just (k, NioFieldErrorV $ MyNioIncorrectValue $ cs x')
   Nothing ->            Just (k, NioFieldErrorV $ MyNioFieldErrorEmty )
 
-allRules ::  [Maybe b -> a -> Maybe (a, NioFieldError)] -> Maybe b -> a -> Maybe (a, NioFieldError)
+-- allRules ::  [Maybe b -> a -> Maybe (a, NioFieldError)] -> Maybe b -> a -> Maybe (a, NioFieldError)
+-- allRules r v k = asum $ fmap (\r' -> r' v k) r
+
+allRules ::  [NioValidateField c] -> NioValidateField c
 allRules r v k = asum $ fmap (\r' -> r' v k) r

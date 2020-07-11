@@ -33,12 +33,11 @@ runInputFormM nf fieldValidators formInput = fieldValidators formInput >>= \case
 
 
 fieldValueM :: forall m a . (Monad m, Show a, FieldGetterM m a) =>
-  NioFieldError ->
   NioValidateField a ->
   NioFormKey ->
   FormInput ->
   m (Either FieldEr a)
-fieldValueM b' validate key input = do
+fieldValueM validate key input = do
   let val'' = case filter ((== key) . fst) input of
         (v':[]) -> pure $ snd v'
         _ -> Nothing
@@ -47,5 +46,5 @@ fieldValueM b' validate key input = do
     Nothing -> case val of
       Just (Right x) -> pure $ Right x
       Just (Left e) -> pure $ Left (key, NioFieldErrorV e)
-      Nothing -> pure $ Left $ (key, b')
+      Nothing -> pure $ Left $ (key, nioerrorFailRetriveOrError)
     Just (s, e) -> pure $ Left (s,e)

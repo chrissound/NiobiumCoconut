@@ -25,7 +25,7 @@ dependencies:
 - tasty
 - tasty-hunit
 name: niobiumcoconut
-version: '0.2.0.0'
+version: '0.3.0.0'
 extra-source-files: ChangeLog.md
 author: Chris Stryczynski
 license: BSD3

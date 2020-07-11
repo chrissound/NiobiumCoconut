@@ -31,7 +31,7 @@ myGetFieldIO :: (Monad m, Show a, FieldGetterM m a) =>
   -> NioFormKey
   -> FormInput
   -> m (Either (FieldEr) a)
-myGetFieldIO = fieldValueM (undefined)
+myGetFieldIO = fieldValueM
 
 inputTestP :: forall. FormInput -> IO (Either ([FieldEr]) TestForm2)
 inputTestP fi = do

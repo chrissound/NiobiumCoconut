@@ -57,20 +57,19 @@ getFormErrorsM fv l = do
 
 
 fieldValue :: (Show a, FieldGetter a) =>
-     NioFieldError
-  -> NioValidateField a
+     NioValidateField a
   -> NioFormKey
   -> FormInput -> Either (FieldEr) a
-fieldValue b' validate key input = do
+fieldValue validate key input = do
   let val'' = case filter ((== key) . fst) input of
         (v':[]) -> pure $ snd v'
         _ -> Nothing
-  let val = (getField) <$> val''
+  let val = getField <$> val''
   case validate (mydbg'' "fieldValue val" val) key of
     Nothing -> case val of
       Just (Right x) -> Right x
       Just (Left e) -> Left $ (key, NioFieldErrorV e)
-      Nothing -> Left $ (key, b')
+      Nothing -> Left $ (key, nioerrorFailRetriveOrError)
     Just (s, e) -> Left (s,e)
 
 
