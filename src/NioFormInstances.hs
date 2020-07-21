@@ -9,10 +9,9 @@
 
 module NioFormInstances where
 
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import Data.String.Conversions
 import NioForm
-import NioFormM
 import NioFormTypes
 import Control.Monad.Identity
 import Text.Read
@@ -82,6 +81,3 @@ instance FieldGetter Text where
 
 instance FieldGetter Int where
   getField = Right . read . cs
-
-instance FieldGetterM IO Text where
-  getFieldM x = pure $ Right $ pack x

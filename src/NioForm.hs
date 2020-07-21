@@ -24,36 +24,35 @@ class FieldGetter a where
   getField :: String -> Either String a
 
 runInputForm
-  :: NioForm
+  :: NioForm'
   -> (FormInput -> Either [FieldEr] a)
   -> FormInput
-  -> Either NioForm a
+  -> Either NioForm' a
 runInputForm nf fieldValidators formInput = case fieldValidators formInput of
   Right x -> Right x
-  Left  e -> Left $ NioForm
-    { fields = fmap (hydrateValues formInput . hydrateErrors e) (fields nf)
+  Left  e -> Left $ NioForm'
+    { fields' = fmap (hydrateValues formInput . hydrateErrors e) (fields' nf)
     }
-
 
 runInputForm'
   :: forall m a s . FieldGetter'' m a s
-  => NioForm
+  => NioForm'
   -> (FormInput -> m (Either [FieldEr] a))
   -> FormInput
-  -> m (Either NioForm a)
+  -> m (Either NioForm' a)
 runInputForm' nf vvv formInput = do
   x <- (vvv formInput :: m (Either [FieldEr] a))
   case x of
     Right x' -> pure $ pure x'
-    Left e -> pure $ Left $ NioForm
-      { fields = fmap (hydrateValues formInput . hydrateErrors e) $ fields nf }
+    Left e -> pure $ Left $ NioForm'
+      { fields' = fmap (hydrateValues formInput . hydrateErrors e) $ fields' nf }
 
 
 hydrateValues :: FormInput -> NioFieldView -> NioFieldView
 hydrateValues fi nf = nf
-  { fvValue = do
-                case filter ((== (fvId nf)) . cs . fst) fi of
-                  []       -> fvValue nf -- original value
+  { fvValue' = do
+                case filter ((== (fvId' nf)) . cs . fst) fi of
+                  []       -> fvValue' nf -- original value
                   (v : []) -> NioFieldValS $ snd v
                   (v     ) -> NioFieldValM $ (fmap snd v)
   }
@@ -65,7 +64,7 @@ hydrateErrors
   -> NioFieldView
   -> NioFieldView
 hydrateErrors e nf =
-  nf { fvErrors = snd <$> filter ((==) (cs (fvId nf)) . fst) e }
+  nf { fvErrors' = snd <$> filter ((==) (cs (fvId' nf)) . fst) e }
 
 getFormErrors :: t -> [t -> Either a b] -> [a]
 getFormErrors input = catMaybes . fmap
