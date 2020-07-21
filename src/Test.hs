@@ -28,7 +28,6 @@ import           NioFormTypes
 import           TestXyz
 import           Text.Pretty.Simple
 
-
 myTests :: [TestTree]
 myTests =
   [
@@ -67,8 +66,7 @@ myTests =
           , ("f5", "xyz")
           ]
     pPrint x
-    let xt = Right $ TestForm  "test" "test" True 4 ["abc","xyz"]
-    (x @?= xt)
+    (True @?= (isLeft x))
     --testCase "more success2 " $ do
          --x <- runInputFormM testForm inputTestP [
              --("f1", "test")
@@ -188,4 +186,4 @@ inputTestP'' fi = (first $ const $ collect fi)
   b = fieldValue (isPresent) "f2"
   c = fieldValue (isEq (== True) "Not true") "f3"
   d = fieldValue (isEq (== 4) "Not 4") "f4"
-  e = fieldValue (isEq ((>=2) . Data.Foldable.length) "Not more than 2 entries") "f5"
+  e = fieldValue (isEq ((>=3) . Data.Foldable.length) "Not more than 2 entries") "f5"

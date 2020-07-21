@@ -24,15 +24,12 @@ class FieldGetter a where
   getField :: String -> Either String a
 
 runInputForm
-  :: NioForm'
+  :: forall a s . FieldGetter'' Identity a s
+  => NioForm'
   -> (FormInput -> Either [FieldEr] a)
   -> FormInput
   -> Either NioForm' a
-runInputForm nf fieldValidators formInput = case fieldValidators formInput of
-  Right x -> Right x
-  Left  e -> Left $ NioForm'
-    { fields' = fmap (hydrateValues formInput . hydrateErrors e) (fields' nf)
-    }
+runInputForm nf vvv formInput = runIdentity $ runInputForm' nf (pure . vvv) formInput
 
 runInputForm'
   :: forall m a s . FieldGetter'' m a s

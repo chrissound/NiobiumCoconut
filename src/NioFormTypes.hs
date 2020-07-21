@@ -9,7 +9,6 @@ module NioFormTypes where
 
 import Data.Text (Text)
 import           Data.Proxy
--- import Data.Function
 
 data NioForm' = NioForm' {
   fields' :: [NioFieldView]

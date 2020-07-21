@@ -18,8 +18,8 @@ data MyNioFieldError =
 --   -> Either (FieldEr) a
 -- myGetField = fieldValue
 
-data TestForm = TestForm Text Text Bool Int [String] deriving (Show, Eq)
-data TestForm2 = TestForm2 Text Text deriving (Show, Eq)
+data TestForm = TestForm Text Text Bool Int [String] deriving (Read, Show, Eq)
+data TestForm2 = TestForm2 Text Text deriving (Read, Show, Eq)
 
 isPresent :: NioValidateField' a
 isPresent v = case v of
