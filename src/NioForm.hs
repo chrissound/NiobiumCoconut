@@ -86,7 +86,7 @@ getFormErrorsM fv l = do
 
 fieldValue'
   :: (Show a, FieldGetter'' m a s)
-  => NioValidateField a
+  => NioValidateField' a
   -> s
   -> FormInput
   -> m (Either (FieldEr) a)
@@ -99,10 +99,14 @@ fieldValue' validate s input = do -- validate key input
                          --NioFieldValS yay -> getField yay
                          --NioFieldValM yay -> _getFieldMany <$> yay
             --) <$> val''
-  val <- getField'' s input 
-  case val of 
-    Right x -> pure $ Right x
-    Left (e,e') -> pure $ Left (e, NioFieldErrorV e')
+  getField'' s input >>= \case
+    Just (Right x) -> case (validate (Just x)) of
+                 Right x' -> pure $ Right x'
+                 Left e -> pure $ Left e
+    Nothing -> case (validate (Nothing)) of
+                 Right x' -> pure $ Right x'
+                 Left e -> pure $ Left e
+    Just (Left (e,e')) -> pure $ Left (e, NioFieldErrorV e')
   --case val of
     --Just (Right x) -> Right x
     --Just (Left e) -> Left $ (key, NioFieldErrorV e)
@@ -116,7 +120,7 @@ fieldValue' validate s input = do -- validate key input
 
 fieldValue
   :: (Show a, FieldGetter'' Identity a s)
-  => NioValidateField a
+  => NioValidateField' a
   -> s
   -> FormInput
   -> Either (FieldEr) a

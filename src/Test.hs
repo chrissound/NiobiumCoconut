@@ -57,6 +57,20 @@ myTests =
     pPrint x
     let xt = Right $ TestForm  "test" "test" True 4 ["abc","xyz"]
     (x @?= xt)
+  , testCase "more success" $ do
+    let x = runInputForm
+          testForm
+          inputTestP''
+          [ ("f1", "test")
+          , ("f2", "test")
+          , ("f3", "True")
+          , ("f4", "4")
+          , ("f5", "abc")
+          , ("f5", "xyz")
+          ]
+    pPrint x
+    let xt = Right $ TestForm  "test" "test" True 4 ["abc","xyz"]
+    (x @?= xt)
     --testCase "more success2 " $ do
          --x <- runInputFormM testForm inputTestP [
              --("f1", "test")
@@ -176,4 +190,4 @@ inputTestP'' fi = (first $ const $ collect fi)
   b = fieldValue (isPresent) "f2"
   c = fieldValue (isEq (== True) "Not true") "f3"
   d = fieldValue (isEq (== 4) "Not 4") "f4"
-  e = fieldValue (Data.Foldable.length > 2) "f5"
+  e = fieldValue (isEq ((>=5) . Data.Foldable.length) "Not more than 2 entries") "f5"

@@ -28,31 +28,31 @@ instance FieldGetter String where
 
 
 instance Read a => FieldGetter'' Identity a String where
-  getField'' k i = do
+  getField'' k i = pure $ do
     case lookup k i of
       Just x -> case readMaybe x of 
-                  Just x' -> pure $ Right x'
-                  Nothing -> pure $ Left (k, [(k, NioFieldErrorV $ "Failed to read value: " ++ x)])
-      Nothing -> pure $ Left (k, [(k, NioFieldErrorV "??")])
+                  Just x' -> Just $ Right x'
+                  Nothing -> Just $ Left (k, [(k, NioFieldErrorV $ "Failed to read value: " ++ x)])
+      Nothing -> Nothing
 
   --getFieldRaw'' _ _ = pure $ True
   getErrors'' _ _ _ = pure $ Nothing
 
 --instance FieldGetter'' Identity a String where
 instance {-# OVERLAPPING #-} FieldGetter'' Identity String String where
-  getField'' k i = do
+  getField'' k i = pure $ do
     case lookup k i of
-      Just x -> pure $ Right x
-      Nothing -> pure $ Left (k, [(k, NioFieldErrorV "??")])
-  getErrors'' _ _ _ = pure $ Nothing
+      Just x -> Just $ Right x
+      Nothing -> Just $ Left (k, [(k, NioFieldErrorV "??")])
+  getErrors'' _ _ _ = pure Nothing
 instance {-# OVERLAPPING #-} FieldGetter'' Identity Text String where
-  getField'' k i = do
+  getField'' k i = pure $ do
     case lookup k i of
-      Just x -> pure $ Right (cs x)
-      Nothing -> pure $ Left (k, [(k, NioFieldErrorV "??")])
+      Just x -> Just $ Right (cs x)
+      Nothing -> Just $ Left (k, [(k, NioFieldErrorV "??")])
   getErrors'' _ _ _ = pure $ Nothing
 instance {-# OVERLAPPING #-} FieldGetter'' Identity [String] String where
-  getField'' k i = pure $ Right $ snd <$> filter ((k ==) . fst) i
+  getField'' k i = pure $ Just $ Right $ snd <$> filter ((k ==) . fst) i
   getErrors'' _ _ _ = pure $ Nothing
 --instance FieldGetter'' Identity Text String where
   --getField'' _ _ = pure $ pure ""
