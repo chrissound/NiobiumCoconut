@@ -63,12 +63,13 @@ deriving instance Show NioFieldView'
 type FieldEr = (NioFormKey, NioFieldError)
 type FormInput = [(String, String)]
 type NioValidateField a = Maybe (Either String a) -> NioFormKey -> Maybe (FieldEr)
-type NioValidateField' a = Maybe a -> Either FieldEr a
+type NioValidateField' a = Maybe a -> Either NioFieldError a
 type NioFormKey = String
 type NioGetField a = Either String a
 
 
 class Monad m => FieldGetter'' m a s | a -> s where
   getField'' :: s -> FormInput -> m (Maybe (Either (String, [FieldEr]) a))
+  getFieldErrorKey' :: s -> Proxy a -> m (String)
   --getFieldRaw'' :: s -> FormInput -> m (a)
-  getErrors'' :: s -> FormInput -> Proxy a -> m (Maybe (String, [FieldEr]))
+  --getErrors'' :: s -> FormInput -> Proxy a -> m (Maybe (String, [FieldEr]))

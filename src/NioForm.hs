@@ -18,6 +18,7 @@ import           Data.Maybe                     ( catMaybes )
 import           Data.String.Conversions
 import           NioFormTypes
 import           Control.Monad.Identity
+import           Data.Proxy
 
 class FieldGetter a where
   getField :: String -> Either String a
@@ -85,7 +86,7 @@ getFormErrorsM fv l = do
     <$> vars
 
 fieldValue'
-  :: (Show a, FieldGetter'' m a s)
+  :: forall m a s . (Show a, FieldGetter'' m a s)
   => NioValidateField' a
   -> s
   -> FormInput
@@ -102,10 +103,14 @@ fieldValue' validate s input = do -- validate key input
   getField'' s input >>= \case
     Just (Right x) -> case (validate (Just x)) of
                  Right x' -> pure $ Right x'
-                 Left e -> pure $ Left e
+                 Left e -> do
+                   k <- getFieldErrorKey' s (Proxy :: Proxy a)
+                   pure $ Left (k, e)
     Nothing -> case (validate (Nothing)) of
                  Right x' -> pure $ Right x'
-                 Left e -> pure $ Left e
+                 Left e -> do
+                   k <- getFieldErrorKey' s (Proxy :: Proxy a)
+                   pure $ Left (k, e)
     Just (Left (e,e')) -> pure $ Left (e, NioFieldErrorV e')
   --case val of
     --Just (Right x) -> Right x

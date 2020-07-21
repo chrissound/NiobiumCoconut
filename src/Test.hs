@@ -190,4 +190,4 @@ inputTestP'' fi = (first $ const $ collect fi)
   b = fieldValue (isPresent) "f2"
   c = fieldValue (isEq (== True) "Not true") "f3"
   d = fieldValue (isEq (== 4) "Not 4") "f4"
-  e = fieldValue (isEq ((>=5) . Data.Foldable.length) "Not more than 2 entries") "f5"
+  e = fieldValue (isEq ((>=2) . Data.Foldable.length) "Not more than 2 entries") "f5"

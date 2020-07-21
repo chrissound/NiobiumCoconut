@@ -24,14 +24,14 @@ data TestForm2 = TestForm2 Text Text deriving (Show, Eq)
 isPresent :: NioValidateField' a
 isPresent v = case v of
   Just x  -> Right x
-  Nothing -> Left ("rrrrrr", NioFieldErrorV $ MyNioFieldErrorEmty)
+  Nothing -> Left (NioFieldErrorV $ MyNioFieldErrorEmty)
 
 isEq :: (a -> Bool) -> Text -> NioValidateField' a
 isEq f failMsg v = case v of
   Just (v') -> case f v' of
     True  -> Right v'
-    False -> Left ("rrrrr", NioFieldErrorV $ MyNioIncorrectValue failMsg)
-  Nothing -> Left ("rrr", NioFieldErrorV $ MyNioFieldErrorEmty)
+    False -> Left (NioFieldErrorV $ MyNioIncorrectValue failMsg)
+  Nothing -> Left (NioFieldErrorV $ MyNioFieldErrorEmty)
 
 -- allRules ::  [Maybe b -> a -> Maybe (a, NioFieldError)] -> Maybe b -> a -> Maybe (a, NioFieldError)
 -- allRules r v k = asum $ fmap (\r' -> r' v k) r
