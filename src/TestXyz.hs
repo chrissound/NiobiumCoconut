@@ -11,7 +11,7 @@ data MyNioFieldError =
   | MyNioIncorrectValue Text
   | MyNioFieldInternalFailure deriving (Show, Eq)
 
--- myGetField :: (Show a, FieldGetter''  a) =>
+-- myGetField :: (Show a, FieldGetter  a) =>
 --      NioValidateField a
 --   -> NioFormKey
 --   -> FormInput

@@ -11,7 +11,7 @@ import Data.Text (Text)
 import           Data.Proxy
 
 data NioForm = NioForm {
-  fields' :: [NioFieldView]
+  fields :: [NioFieldView]
   } deriving (Show, Eq)
 
 data NioFieldError = forall a. (Show a, Eq a) => NioFieldErrorV a
@@ -39,7 +39,7 @@ data NioFieldView = NioFieldView
     , fvErrors :: [NioFieldError]
     , fvType :: NioFieldInput
     , fvValue :: NioFieldVal
-    --, fvDetermine :: forall m a s. FieldGetter'' m a s => FormInput -> a
+    --, fvDetermine :: forall m a s. FieldGetter m a s => FormInput -> a
     } deriving Eq
 
 data NioFieldVal = NioFieldValS String | NioFieldValM [String] deriving (Show, Eq)
@@ -54,8 +54,6 @@ type NioFormKey = String
 type NioGetField a = Either String a
 
 
-class Monad m => FieldGetter'' m a s | a -> s where
-  getField'' :: s -> FormInput -> m (Maybe (Either (String, [FieldEr]) a))
-  getFieldErrorKey' :: s -> Proxy a -> m (String)
-  --getFieldRaw'' :: s -> FormInput -> m (a)
-  --getErrors'' :: s -> FormInput -> Proxy a -> m (Maybe (String, [FieldEr]))
+class Monad m => FieldGetter m a s | a -> s where
+  getField :: s -> FormInput -> m (Maybe (Either (String, [FieldEr]) a))
+  getFieldErrorKey :: s -> Proxy a -> m (String)

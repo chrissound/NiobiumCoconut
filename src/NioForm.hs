@@ -20,11 +20,8 @@ import           NioFormTypes
 import           Control.Monad.Identity
 import           Data.Proxy
 
-class FieldGetter a where
-  getField :: String -> Either String a
-
 runInputForm
-  :: forall a s . FieldGetter'' Identity a s
+  :: forall a s . FieldGetter Identity a s
   => NioForm
   -> (FormInput -> Either [FieldEr] a)
   -> FormInput
@@ -32,7 +29,7 @@ runInputForm
 runInputForm nf vvv formInput = runIdentity $ runInputForm' nf (pure . vvv) formInput
 
 runInputForm'
-  :: forall m a s . FieldGetter'' m a s
+  :: forall m a s . FieldGetter m a s
   => NioForm
   -> (FormInput -> m (Either [FieldEr] a))
   -> FormInput
@@ -42,7 +39,7 @@ runInputForm' nf vvv formInput = do
   case x of
     Right x' -> pure $ pure x'
     Left e -> pure $ Left $ NioForm
-      { fields' = fmap (hydrateValues formInput . hydrateErrors e) $ fields' nf }
+      { fields = fmap (hydrateValues formInput . hydrateErrors e) $ fields nf }
 
 
 hydrateValues :: FormInput -> NioFieldView -> NioFieldView
@@ -82,7 +79,7 @@ getFormErrorsM fv l = do
     <$> vars
 
 fieldValue'
-  :: forall m a s . (Show a, FieldGetter'' m a s)
+  :: forall m a s . (Show a, FieldGetter m a s)
   => NioValidateField' a
   -> s
   -> FormInput
@@ -96,16 +93,16 @@ fieldValue' validate s input = do -- validate key input
                          --NioFieldValS yay -> getField yay
                          --NioFieldValM yay -> _getFieldMany <$> yay
             --) <$> val''
-  getField'' s input >>= \case
+  getField s input >>= \case
     Just (Right x) -> case (validate (Just x)) of
                  Right x' -> pure $ Right x'
                  Left e -> do
-                   k <- getFieldErrorKey' s (Proxy :: Proxy a)
+                   k <- getFieldErrorKey s (Proxy :: Proxy a)
                    pure $ Left (k, e)
     Nothing -> case (validate (Nothing)) of
                  Right x' -> pure $ Right x'
                  Left e -> do
-                   k <- getFieldErrorKey' s (Proxy :: Proxy a)
+                   k <- getFieldErrorKey s (Proxy :: Proxy a)
                    pure $ Left (k, e)
     Just (Left (e,e')) -> pure $ Left (e, NioFieldErrorV e')
   --case val of
@@ -120,7 +117,7 @@ fieldValue' validate s input = do -- validate key input
     --Just (s, e) -> Left (s,e)
 
 fieldValue
-  :: (Show a, FieldGetter'' Identity a s)
+  :: (Show a, FieldGetter Identity a s)
   => NioValidateField' a
   -> s
   -> FormInput
@@ -178,8 +175,8 @@ mydbg'' _ = id
 
 
 
---instance FieldGetter'' Identity String (String, String) where
-  --getField'' (a,b) _ = pure $ Right a
+--instance FieldGetter Identity String (String, String) where
+  --getField (a,b) _ = pure $ Right a
   --getErrors'' (a,b) _ x = pure Nothing
 
 -- runInputForm'

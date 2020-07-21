@@ -113,7 +113,7 @@ main = do
   print "done"
 
 renderNioForm :: NioForm -> IO ()
-renderNioForm nf = forM_ (fields' nf) print
+renderNioForm nf = forM_ (fields nf) print
 
 emptyError :: [NioFieldError]
 emptyError = []
