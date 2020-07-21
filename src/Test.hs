@@ -112,14 +112,14 @@ main = do
   defaultMain $ testGroup "Tests:" myTests
   print "done"
 
-renderNioForm :: NioForm' -> IO ()
+renderNioForm :: NioForm -> IO ()
 renderNioForm nf = forM_ (fields' nf) print
 
 emptyError :: [NioFieldError]
 emptyError = []
 
-testForm :: NioForm'
-testForm = NioForm'
+testForm :: NioForm
+testForm = NioForm
   [ NioFieldView "Test"   "f1" emptyError NioFieldInputText (NioFieldValS "")
   , NioFieldView "Test 2" "f2" emptyError NioFieldInputText (NioFieldValS "")
   , NioFieldView "Test 3"

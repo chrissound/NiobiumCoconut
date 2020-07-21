@@ -10,7 +10,7 @@ module NioFormTypes where
 import Data.Text (Text)
 import           Data.Proxy
 
-data NioForm' = NioForm' {
+data NioForm = NioForm {
   fields' :: [NioFieldView]
   } deriving (Show, Eq)
 
@@ -34,11 +34,11 @@ data NioFieldInput =
   deriving (Show, Eq)
 
 data NioFieldView = NioFieldView
-    { fvLabel' :: Text
-    , fvId' :: Text
-    , fvErrors' :: [NioFieldError]
-    , fvType' :: NioFieldInput
-    , fvValue' :: NioFieldVal
+    { fvLable :: Text
+    , fvId :: Text
+    , fvErrors :: [NioFieldError]
+    , fvType :: NioFieldInput
+    , fvValue :: NioFieldVal
     --, fvDetermine :: forall m a s. FieldGetter'' m a s => FormInput -> a
     } deriving Eq
 
