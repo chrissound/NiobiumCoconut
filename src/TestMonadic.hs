@@ -26,24 +26,24 @@ import NioFormM
 import NioFormTypes
 import TestXyz
 
-myGetFieldIO :: (Monad m, Show a, FieldGetterM m a) =>
-     NioValidateField a
-  -> NioFormKey
-  -> FormInput
-  -> m (Either (FieldEr) a)
-myGetFieldIO = fieldValueM
-
-inputTestP :: forall. FormInput -> IO (Either ([FieldEr]) TestForm2)
-inputTestP fi = do
-    allErrors <- collect fi
-    (first $ const $ allErrors) <$>
-      ((
-        ((liftM2 . liftM2) TestForm2) <$> a <*> b
-      ) fi)
-  where
-      collect z = mconcat [
-          getFormErrorsM z [a]
-        , getFormErrorsM z [b]
-        ]
-      a = (pure) <$> myGetField (isPresent) "f1" :: FormInput -> IO (Either FieldEr Text)
-      b = myGetFieldIO (isPresent) "f2" :: FormInput -> IO (Either FieldEr Text)
+-- myGetFieldIO :: (Monad m, Show a, FieldGetterM m a) =>
+--      NioValidateField a
+--   -> NioFormKey
+--   -> FormInput
+--   -> m (Either (FieldEr) a)
+-- myGetFieldIO = fieldValueM
+-- 
+-- inputTestP :: forall. FormInput -> IO (Either ([FieldEr]) TestForm2)
+-- inputTestP fi = do
+--     allErrors <- collect fi
+--     (first $ const $ allErrors) <$>
+--       ((
+--         ((liftM2 . liftM2) TestForm2) <$> a <*> b
+--       ) fi)
+--   where
+--       collect z = mconcat [
+--           getFormErrorsM z [a]
+--         , getFormErrorsM z [b]
+--         ]
+--       a = (pure) <$> myGetField (isPresent) "f1" :: FormInput -> IO (Either FieldEr Text)
+--       b = myGetFieldIO (isPresent) "f2" :: FormInput -> IO (Either FieldEr Text)

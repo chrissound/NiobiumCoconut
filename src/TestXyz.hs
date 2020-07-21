@@ -1,6 +1,6 @@
 module TestXyz where
 
-import NioForm
+--import NioForm
 -- import NioFormInstances
 import NioFormTypes
 import Data.Text
@@ -12,14 +12,14 @@ data MyNioFieldError =
   | MyNioIncorrectValue Text
   | MyNioFieldInternalFailure deriving (Show, Eq)
  
-myGetField :: (Show a, FieldGetter a) =>
-     NioValidateField a
-  -> NioFormKey
-  -> FormInput
-  -> Either (FieldEr) a
-myGetField = fieldValue
+-- myGetField :: (Show a, FieldGetter''  a) =>
+--      NioValidateField a
+--   -> NioFormKey
+--   -> FormInput
+--   -> Either (FieldEr) a
+-- myGetField = fieldValue
 
-data TestForm = TestForm Text Text Bool Int deriving (Show, Eq)
+data TestForm = TestForm Text Text Bool Int [String] deriving (Show, Eq)
 data TestForm2 = TestForm2 Text Text deriving (Show, Eq)
 
 isPresent :: NioValidateField a

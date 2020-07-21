@@ -15,10 +15,6 @@ class (Monad m) => FieldGetterM m a where
 
 runMaybeM :: Monad m => Maybe (m (NioGetField a)) -> m (Maybe (NioGetField a))
 runMaybeM = sequence
--- runMaybeM = \case
---   (Just mia) -> Just <$> mia
---   Nothing -> pure Nothing
--- runMaybeM :: Monad m => Maybe (m a) -> m (Maybe a)
 
 runInputFormM :: (Monad m) =>
      NioForm

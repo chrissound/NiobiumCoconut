@@ -24,8 +24,10 @@ dependencies:
 - HUnit
 - tasty
 - tasty-hunit
+- mtl
+- pretty-simple
 name: niobiumcoconut
-version: '0.3.0.0'
+version: '0.4.0.0'
 extra-source-files: ChangeLog.md
 author: Chris Stryczynski
 license: BSD3
