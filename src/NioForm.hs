@@ -80,7 +80,7 @@ getFormErrorsM fv l = do
 
 fieldValue'
   :: forall m a s . (Show a, FieldGetter m a s)
-  => NioValidateField' a
+  => NioValidateField a
   -> s
   -> FormInput
   -> m (Either (FieldEr) a)
@@ -118,7 +118,7 @@ fieldValue' validate s input = do -- validate key input
 
 fieldValue
   :: (Show a, FieldGetter Identity a s)
-  => NioValidateField' a
+  => NioValidateField a
   -> s
   -> FormInput
   -> Either (FieldEr) a

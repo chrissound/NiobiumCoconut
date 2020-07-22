@@ -11,6 +11,8 @@ data MyNioFieldError =
   | MyNioIncorrectValue Text
   | MyNioFieldInternalFailure deriving (Show, Eq)
 
+
+
 -- myGetField :: (Show a, FieldGetter  a) =>
 --      NioValidateField a
 --   -> NioFormKey
@@ -21,12 +23,12 @@ data MyNioFieldError =
 data TestForm = TestForm Text Text Bool Int [String] deriving (Read, Show, Eq)
 data TestForm2 = TestForm2 Text Text deriving (Read, Show, Eq)
 
-isPresent :: NioValidateField' a
+isPresent :: NioValidateField a
 isPresent v = case v of
   Just x  -> Right x
   Nothing -> Left (NioFieldErrorV $ MyNioFieldErrorEmty)
 
-isEq :: (a -> Bool) -> Text -> NioValidateField' a
+isEq :: (a -> Bool) -> Text -> NioValidateField a
 isEq f failMsg v = case v of
   Just (v') -> case f v' of
     True  -> Right v'
@@ -37,4 +39,4 @@ isEq f failMsg v = case v of
 -- allRules r v k = asum $ fmap (\r' -> r' v k) r
 
 allRules :: [NioValidateField c] -> NioValidateField c
-allRules r v k = asum $ fmap (\r' -> r' v k) r
+allRules r v = asum $ fmap (\r' -> r' v) r
