@@ -1,8 +1,10 @@
+{-# OPTIONS -Wno-unused-imports #-}
 module TestXyz where
 
 --import NioForm
 -- import NioFormInstances
 import           NioFormTypes
+import           NioFieldErrorInstances
 import           Data.Text
 import           Data.Foldable
 

@@ -9,6 +9,7 @@ library:
   exposed-modules:
     - NioForm
     - NioFormInstances
+    - NioFieldErrorInstances
     - NioFormTypes
 license-file: LICENSE
 build-type: Simple

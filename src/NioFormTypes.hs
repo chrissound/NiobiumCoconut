@@ -10,9 +10,6 @@ module NioFormTypes where
 
 import Data.Text (Text)
 import           Data.Proxy
-import Control.Applicative
---import Data.Monoid
---import Control.Monad
 
 data NioForm = NioForm {
   fields :: [NioFieldView]
@@ -21,14 +18,6 @@ data NioForm = NioForm {
 data NioFieldError = forall a. (Show a, Eq a) => NioFieldErrorV a
 instance Eq NioFieldError where
   (==) (NioFieldErrorV a) (NioFieldErrorV b) = show a == show b
-
-instance Alternative (Either NioFieldError) where
-    (<|>) a b = case (a, b) of
-                  (Right x, Right _) -> Right x
-                  (_, Right y) -> Right y
-                  (Right x, _) -> Right x
-                  (_, _) -> empty
-    empty = Left $ NioFieldErrorV "alternativ empty"
 
 nioerrorFailRetriveOrError :: NioFieldError
 nioerrorFailRetriveOrError = NioFieldErrorV "Failed to retrieve or return error"
@@ -39,14 +28,14 @@ data NioFieldInput =
     NioFieldInputHidden
   | NioFieldInputTextShort
   | NioFieldInputText
-  | NioFieldInputMultiple [(Text,Text)]
+  | NioFieldInputLabled Bool [(Text,Text)]
   | NioFieldInputDigit
   | NioFieldInputBool (Bool)
   | NioFieldInputFile
   deriving (Show, Eq)
 
 data NioFieldView = NioFieldView
-    { fvLable :: Text
+    { fvLabel :: Text
     , fvId :: Text
     , fvErrors :: [NioFieldError]
     , fvType :: NioFieldInput

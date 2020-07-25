@@ -125,7 +125,7 @@ testForm = NioForm
   , NioFieldView "Test 3"
                  "f3"
                  emptyError
-                 (NioFieldInputMultiple [("a", "a"), ("b", "b")])
+                 (NioFieldInputLabled False [("a", "a"), ("b", "b")])
                  (NioFieldValS $ show True)
   , NioFieldView "Test4"
                  "f4"

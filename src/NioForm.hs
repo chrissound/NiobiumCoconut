@@ -21,16 +21,25 @@ import           Control.Monad.Identity
 import           Data.Proxy
 
 runInputForm
-  :: forall a s . FieldGetter Identity a s
-  => NioForm
-  -> (FormInput -> Either [FieldEr] a)
+  -- :: forall b a s . (FieldGetter Identity a s)
+  ::
+     NioForm
+  -> (FormInput -> Either [FieldEr] b)
   -> FormInput
-  -> Either NioForm a
+  -> Either NioForm b
 runInputForm nf vvv formInput = runIdentity $ runInputForm' nf (pure . vvv) formInput
 
+-- myRunFormAppActionM 
+--   :: forall m m2 a s . (FieldGetter m a s, Monad m2, m ~ m2)
+--   => NioForm
+--   -> (FormInput -> m (Either [FieldEr] a))
+--   -> FormInput
+--   -> m2 (Either NioForm a)
+-- myRunFormAppActionM = runInputForm'
+
 runInputForm'
-  :: forall m a s . FieldGetter m a s
-  => NioForm
+  -- :: forall m a s . (FieldGetter m a s)
+  :: forall m a . (Monad m) => NioForm
   -> (FormInput -> m (Either [FieldEr] a))
   -> FormInput
   -> m (Either NioForm a)
@@ -79,7 +88,7 @@ getFormErrorsM fv l = do
     <$> vars
 
 fieldValue'
-  :: forall m a s . (Show a, FieldGetter m a s)
+  :: forall m a s . (FieldGetter m a s)
   => NioValidateField a
   -> s
   -> FormInput
@@ -117,7 +126,7 @@ fieldValue' validate s input = do -- validate key input
     --Just (s, e) -> Left (s,e)
 
 fieldValue
-  :: (Show a, FieldGetter Identity a s)
+  :: (FieldGetter Identity a s)
   => NioValidateField a
   -> s
   -> FormInput
