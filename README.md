@@ -1,14 +1,24 @@
 # NiobiumCoconut
 
-## Limitations
+This is a library I started ages as a side project of sorts. It basically started after running into some frustration with the digestive-functors library.
 
-This is a library I started ages as a side project of sorts. I'm not actually sure how usable it is and whether it has bugs / limitations. I just decided to share it. It basically started after running into some frustration with the digestive-functors library.
+It's quite a flexible form validation library (at least to anything I've ever used in the past). You can validate practically anything, and even use monadic contexts (like IO) for validation.
 
-It's quite a flexible form validation library. You can validate practically anything, and even use IO etc for validation, a field value can be validated by looking at all values of the input. It has someeee type cleverness using existential types.
-
-I think it's pretty much complete. There is one niggly bit where I realized I should return a `Either e a` instead of `Maybe a` - or maybe it was `error` instead of `Maybe a`? Can't remember.
+Hope to write a tutorial soon :).
 
 There is set of tests written - that is probably the best place to start if you'd like to investigate this.
+
+## Limitations
+
+Hmmm I suppose it only supports key-value based input so basically what you get with data from web forms.
+
+## Examples
+
+### Projects that use this library:
+
+- https://github.com/chrissound/BerylliumBlueberry
+
+### Example code
 
 Some example snippets, you basically need 3 things:
 - The value itself `TestForm` in our case

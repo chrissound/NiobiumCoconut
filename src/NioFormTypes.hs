@@ -30,8 +30,9 @@ data NioFieldInput =
   | NioFieldInputText
   | NioFieldInputLabled Bool [(Text,Text)]
   | NioFieldInputDigit
-  | NioFieldInputBool (Bool)
+  | NioFieldInputBool String
   | NioFieldInputFile
+  | NioFieldInputSubmit Text Text
   deriving (Show, Eq)
 
 data NioFieldView = NioFieldView
@@ -40,7 +41,6 @@ data NioFieldView = NioFieldView
     , fvErrors :: [NioFieldError]
     , fvType :: NioFieldInput
     , fvValue :: NioFieldVal
-    --, fvDetermine :: forall m a s. FieldGetter m a s => FormInput -> a
     } deriving Eq
 
 data NioFieldVal = NioFieldValS String | NioFieldValM [String] deriving (Show, Eq)
