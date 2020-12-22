@@ -6,11 +6,11 @@ executables:
     ghc-options: -Wall -O2
 library:
   source-dirs: src
-  exposed-modules:
-    - NioForm
-    - NioFormInstances
-    - NioFieldErrorInstances
-    - NioFormTypes
+  #exposed-modules:
+    #- NioForm
+    #- NioFormInstances
+    #- NioFieldErrorInstances
+    #- NioFormTypes
 license-file: LICENSE
 build-type: Simple
 maintainer: Chris Stryczynski
@@ -27,7 +27,7 @@ dependencies:
 - mtl
 - pretty-simple
 name: niobiumcoconut
-version: '0.4.1.0'
+version: '0.5.1.0'
 extra-source-files: ChangeLog.md
 author: Chris Stryczynski
 license: BSD3
