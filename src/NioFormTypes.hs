@@ -28,6 +28,7 @@ data NioFieldInput =
     NioFieldInputHidden
   | NioFieldInputTextShort
   | NioFieldInputText
+  | NioFieldInputTextPassword
   | NioFieldInputLabled Bool [(Text,Text)]
   | NioFieldInputDigit
   | NioFieldInputBool String

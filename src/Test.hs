@@ -27,6 +27,7 @@ import           NioFormTypes
 
 import           TestXyz
 import           Text.Pretty.Simple
+import Control.Applicative
 
 myTests :: [TestTree]
 myTests =
@@ -187,3 +188,44 @@ inputTestP'' fi = (first $ const $ collect fi)
   c = fieldValue (isEq (== True) "Not true") "f3"
   d = fieldValue (isEq (== 4) "Not 4") "f4"
   e = fieldValue (isEq ((>=3) . Data.Foldable.length) "Not more than 2 entries") "f5"
+
+yolo :: IO (Int, Int)
+yolo = do
+  (liftA2 (,) <$> a <*> b) 20 where
+  a _ = pure 10 :: IO Int
+  b _ = pure 10 :: IO Int
+
+yoloinputTestP''' :: FormInput -> IO (Either (FieldEr) TestForm)
+yoloinputTestP''' fi = 
+  ((liftM5 . liftM5) TestForm <$> a <*> b <*> c <*> d <*> e) fi
+ where
+  a  = const(pure $ pure "") :: FormInput -> IO (Either FieldEr Text)
+  b _ = pure $ pure "" :: IO (Either FieldEr Text)
+  c _ = pure $ pure True :: IO (Either FieldEr Bool)
+  d _ = pure $ pure 10 :: IO (Either FieldEr Int)
+  e _ = pure $ pure [] :: IO (Either FieldEr [String])
+
+yoloinputTestP'''' :: FormInput -> IO (Either [FieldEr] TestForm)
+yoloinputTestP'''' fi = do
+  allErrors' <- mconcat <$> sequence allErrors
+  (first $ const allErrors') <$> ((liftM5 . liftM5) TestForm <$> a <*> b <*> c <*> d <*> e) fi
+ where
+  allErrors =
+    [ getFormErrorsM fi [a]
+    , getFormErrorsM fi [b]
+    ]
+  a  = const(pure $ pure "") :: FormInput -> IO (Either FieldEr Text)
+  b _ = pure $ pure "" :: IO (Either FieldEr Text)
+  c _ = pure $ pure True :: IO (Either FieldEr Bool)
+  d _ = pure $ pure 10 :: IO (Either FieldEr Int)
+  e _ = pure $ pure [] :: IO (Either FieldEr [String])
+
+--inputTestP''' :: FormInput -> IO (Either (FieldEr) TestForm)
+--inputTestP''' fi = 
+  --(((liftM5 . liftM5) TestForm) <$> a <*> b <*> c <*> d <*> e) fi
+ --where
+  --a _ = fieldValue' undefined undefined undefined :: IO (Either FieldEr Text)
+  --b _ = fieldValue' undefined undefined undefined :: IO (Either FieldEr Text)
+  --c _ = fieldValue' undefined undefined undefined :: IO (Either FieldEr Bool)
+  --d _ = fieldValue' undefined undefined undefined :: IO (Either FieldEr Int)
+  --e _ = fieldValue' undefined undefined undefined :: IO (Either FieldEr [String])
