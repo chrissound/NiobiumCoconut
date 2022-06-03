@@ -20,20 +20,20 @@ import           Control.Monad.Identity
 
 runInputForm
   :: (Functor c)
-  => (NioFormG c)
-  -> (FormInput -> Either [FieldEr] b)
+  => (NioFormG c e)
+  -> (FormInput -> Either [FieldEr e] b)
   -> FormInput
-  -> Either (NioFormG c) b
+  -> Either (NioFormG c e) b
 runInputForm nf vvv formInput = runIdentity $ runInputForm' nf (pure . vvv) formInput
 
 runInputForm'
-  :: forall m a c. (Functor c, Monad m)
-  => (NioFormG c)
-  -> (FormInput -> m (Either [FieldEr] a))
+  :: forall m a e c. (Functor c, Monad m)
+  => (NioFormG c e)
+  -> (FormInput -> m (Either [FieldEr e] a))
   -> FormInput
-  -> m (Either (NioFormG c) a)
+  -> m (Either (NioFormG c e) a)
 runInputForm' nf vvv formInput = do
-  x <- (vvv formInput :: m (Either [FieldEr] a))
+  x <- (vvv formInput :: m (Either [FieldEr e] a))
   case x of
     Right x' -> pure $ pure x'
     Left e -> pure $ Left $ NioFormG

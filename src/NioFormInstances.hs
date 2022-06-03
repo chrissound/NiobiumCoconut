@@ -14,50 +14,73 @@ import Data.String.Conversions
 import NioFormTypes
 import Control.Monad.Identity
 import Text.Read
+import MyNioFieldError
 --import Data.List
-
-instance (Monad m) => FieldGetter m Bool String where
+--
+instance (Monad m) => FieldGetterErrorKey m [String] String where
   getFieldErrorKey k _ = pure k
+
+instance (Monad m) => FieldGetterErrorKey m Int String where
+  getFieldErrorKey k _ = pure k
+
+instance (Monad m) => FieldGetterErrorKey m Bool String where
+  getFieldErrorKey k _ = pure k
+
+instance (Monad m) => FieldGetterErrorKey m Text String where
+  getFieldErrorKey k _ = pure k
+
+instance (Monad m) => FieldGetterErrorKey m String String where
+  getFieldErrorKey k _ = pure k
+  
+instance (Monad m) => FieldGetter m Bool MyNioFieldError String where
   getField k i = pure $ do
     case lookup k i of
       Just x -> case readMaybe x of 
                   Just x' -> Just $ Right x'
-                  Nothing -> Just $ Left (k, [(k, NioFieldErrorV $ "Failed to read value: " ++ x)])
+                  Nothing -> Just $ Left (k, [(k, MyNioIncorrectValue k x)])
       Nothing -> Nothing
 
-instance (Monad m) => FieldGetter m Int String where
-  getFieldErrorKey k _ = pure k
+--instance (Monad m) => FieldGetterErrorKey m Int String where
+  --getFieldErrorKey k _ = pure k
+
+instance (Monad m) => FieldGetter m Int MyNioFieldError String where
   getField k i = pure $ do
     case lookup k i of
       Just x -> case readMaybe x of 
                   Just x' -> Just $ Right x'
-                  Nothing -> Just $ Left (k, [(k, NioFieldErrorV $ "Failed to read value: " ++ x)])
+                  Nothing -> Just $ Left (k, [(k, MyNioIncorrectValue k $ "Failed to read value: " ++ x)])
       Nothing -> Nothing
 
-  --getFieldRaw'' _ _ = pure $ True
+--instance (Monad m) => FieldGetterErrorKey m String String where
+  --getFieldErrorKey k _ = pure k
 
---instance FieldGetter Identity a String where
-  --
-instance Monad m => FieldGetter m String String where
-  getFieldErrorKey k _ = pure k
+instance Monad m => FieldGetter m String MyNioFieldError String where
   getField k i = pure $ do
     case lookup k i of
       Just x -> Just $ Right x
-      Nothing -> Just $ Left (k, [(k, NioFieldErrorV "??")])
+      Nothing -> Just $ Left (k, [(k, MyNioFieldErrorNotPresent)])
 
---instance FieldGetter Identity String String where
+instance Monad m => FieldGetter m [String] MyNioFieldError String where
+  getField = getFieldList
+
+--instance (Monad m) => FieldGetterErrorKey m Text String where
   --getFieldErrorKey k _ = pure k
-  --getField k i = pure $ do
-    --case lookup k i of
-      --Just x -> Just $ Right x
-      --Nothing -> Just $ Left (k, [(k, NioFieldErrorV "??")])
-instance FieldGetter Identity Text String where
-  getFieldErrorKey k _ = pure k
+
+instance FieldGetter Identity Text MyNioFieldError String where
   getField k i = pure $ do
     case lookup k i of
       Just x -> Just $ Right (cs x)
-      Nothing -> Just $ Left (k, [(k, NioFieldErrorV "??")])
+      Nothing -> Just $ Left (k, [(k, MyNioFieldErrorNotPresent)])
 
-instance (Monad m) => FieldGetter m [String] String where
-  getFieldErrorKey k _ = pure k
-  getField k i = pure $ Just $ Right $ snd <$> filter ((k ==) . fst) i
+--instance FieldGetter Identity String MyNioFieldError String where
+  --getField k i = pure $ do
+    --case lookup k i of
+      --Just x -> Just $ Right (cs x)
+      --Nothing -> Just $ Left (k, [(k, MyNioFieldErrorNotPresent)])
+
+
+--instance (Monad m) => FieldGetterErrorKey m [String] String where
+  --getFieldErrorKey k _ = pure k
+
+--instance (Monad m) => FieldGetter m [String] e String where
+  --getField k i = pure $ Just $ Right $ snd <$> filter ((k ==) . fst) i

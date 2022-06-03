@@ -15,6 +15,12 @@ let
     overrides = self: super: rec {
     };
   };
+  src = pkgs.lib.cleanSourceWith {
+    filter = name: type:
+      !(pkgs.lib.hasSuffix ".cabal" name)
+    ;
+    src = ./.;
+  };
 in
-  myHaskellPackages.callCabal2nix "niobiumcoconut" (./.) {}
+  myHaskellPackages.callCabal2nix "niobiumcoconut" (src) {}
 

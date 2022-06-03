@@ -23,10 +23,10 @@ import           Data.Proxy
 runInputForm
   -- :: forall b a s . (FieldGetter Identity a s)
   ::
-     NioForm
-  -> (FormInput -> Either [FieldEr] b)
+     NioForm e
+  -> (FormInput -> Either [FieldEr e] b)
   -> FormInput
-  -> Either NioForm b
+  -> Either (NioForm e) b
 runInputForm nf vvv formInput = runIdentity $ runInputForm' nf (pure . vvv) formInput
 
 -- myRunFormAppActionM 
@@ -39,19 +39,19 @@ runInputForm nf vvv formInput = runIdentity $ runInputForm' nf (pure . vvv) form
 
 runInputForm'
   -- :: forall m a s . (FieldGetter m a s)
-  :: forall m a . (Monad m) => NioForm
-  -> (FormInput -> m (Either [FieldEr] a))
+  :: forall m a e . (Monad m) => (NioForm e)
+  -> (FormInput -> m (Either [FieldEr e] a))
   -> FormInput
-  -> m (Either NioForm a)
+  -> m (Either (NioForm e) a)
 runInputForm' nf vvv formInput = do
-  x <- (vvv formInput :: m (Either [FieldEr] a))
+  x <- (vvv formInput :: m (Either [FieldEr e] a))
   case x of
     Right x' -> pure $ pure x'
     Left e -> pure $ Left $ NioForm
-      { fields = fmap (hydrateValues formInput . hydrateErrors e) $ fields nf }
+       { fields = fmap (hydrateValues formInput . hydrateErrors e) $ fields nf }
 
 
-hydrateValues :: FormInput -> NioFieldView -> NioFieldView
+hydrateValues :: FormInput -> NioFieldView e -> NioFieldView e
 hydrateValues fi nf = nf
   { fvValue = do
                 case filter ((== (fvId nf)) . cs . fst) fi of
@@ -61,11 +61,11 @@ hydrateValues fi nf = nf
   }
 
 hydrateErrors
-  :: forall a
+  :: forall a e
    . (Eq a, ConvertibleStrings Text a, Show a)
-  => [(a, NioFieldError)]
-  -> NioFieldView
-  -> NioFieldView
+  => [(a, e)]
+  -> NioFieldView e
+  -> NioFieldView e
 hydrateErrors e nf =
   nf { fvErrors = snd <$> filter ((==) (cs (fvId nf)) . fst) e }
 
@@ -88,20 +88,15 @@ getFormErrorsM fv l = do
     <$> vars
 
 fieldValue'
-  :: forall m a s . (FieldGetter m a s)
-  => NioValidateField a
+  :: forall m a e s .
+    ( FieldGetter m a e s
+    , FieldGetterErrorKey m a s
+    , FieldGetterErrorMsg m e)
+  => NioValidateField a e
   -> s
   -> FormInput
-  -> m (Either (FieldEr) a)
-fieldValue' validate s input = do -- validate key input
-  --let val'' = case filter ((== key) . fst) input of
-        --(v:[]) -> pure $ NioFieldValS $  snd v
-        --[] -> Nothing
-        --(v) -> pure $ NioFieldValM (fmap snd v)
-  --let val = (\val'' -> case val'' of
-                         --NioFieldValS yay -> getField yay
-                         --NioFieldValM yay -> _getFieldMany <$> yay
-            --) <$> val''
+  -> m (Either (FieldEr e) a)
+fieldValue' validate s input = do
   getField s input >>= \case
     Just (Right x) -> case (validate (Just x)) of
                  Right x' -> pure $ Right x'
@@ -113,52 +108,19 @@ fieldValue' validate s input = do -- validate key input
                  Left e -> do
                    k <- getFieldErrorKey s (Proxy :: Proxy a)
                    pure $ Left (k, e)
-    Just (Left (e,e')) -> pure $ Left (e, NioFieldErrorV e')
-  --case val of
-    --Just (Right x) -> Right x
-    --Just (Left e) -> Left $ (key, NioFieldErrorV e)
-    --Nothing -> Left $ (key, nioerrorFailRetriveOrError)
-  --case validate (mydbg'' "fieldValue val" val) key of
-    --Nothing -> case val of
-      --Just (Right x) -> Right x
-      --Just (Left e) -> Left $ (key, NioFieldErrorV e)
-      --Nothing -> Left $ (key, nioerrorFailRetriveOrError)
-    --Just (s, e) -> Left (s,e)
+    Just (Left (k,e')) -> do
+      x <- renderErrors e'
+      pure $ Left (k, x)
 
 fieldValue
-  :: (FieldGetter Identity a s)
-  => NioValidateField a
+  :: ( FieldGetter Identity a e s
+     , FieldGetterErrorKey Identity a s
+     , FieldGetterErrorMsg Identity e)
+  => NioValidateField a e
   -> s
   -> FormInput
-  -> Either (FieldEr) a
---fieldValue validate key input = undefined
+  -> Either (FieldEr e) a
 fieldValue validate s input = runIdentity (fieldValue' validate s input)
--- fieldValue
---   :: (Show a, FieldGetter a)
---   => NioValidateField a
---   -> NioFormKey
---   -> FormInput
---   -> Either (FieldEr) a
--- fieldValue validate key input = undefined
-  --let val'' = case filter ((== key) . fst) input of
-        --(v:[]) -> pure $ NioFieldValS $  snd v
-        --[] -> Nothing
-        --(v) -> pure $ NioFieldValM (fmap snd v)
-  --let val = (\val'' -> case val'' of
-                         --NioFieldValS yay -> getField yay
-                         --NioFieldValM yay -> _getFieldMany <$> yay
-            --) <$> val''
-  --case val of
-    --Just (Right x) -> Right x
-    --Just (Left e) -> Left $ (key, NioFieldErrorV e)
-    --Nothing -> Left $ (key, nioerrorFailRetriveOrError)
-  --case validate (mydbg'' "fieldValue val" val) key of
-    --Nothing -> case val of
-      --Just (Right x) -> Right x
-      --Just (Left e) -> Left $ (key, NioFieldErrorV e)
-      --Nothing -> Left $ (key, nioerrorFailRetriveOrError)
-    --Just (s, e) -> Left (s,e)
-
 
 
 mydbg'' :: Show a => String -> a -> a
@@ -166,38 +128,3 @@ mydbg'' :: Show a => String -> a -> a
 --   <$> ((++) s . show)
 --   <*> id
 mydbg'' _ = id
-
---class Monad m => FieldGetter' m a where
-  --data FieldGetterSelector m a
-  --getField' :: FieldGetterSelector m a -> FormInput -> m (Either [FieldEr] a)
-  --getErrors' :: FieldGetterSelector m a -> FormInput -> m (Maybe [FieldEr])
-
---instance FieldGetter' Identity String where
-  --data FieldGetterSelector Identity String = FieldGetterSelectorString String
-  --getField' (FieldGetterSelectorString x) fi = pure $ Right x
-  --getErrors' (FieldGetterSelectorString x) fi = pure $ Nothing
-
---instance FieldGetter' Identity (String, String) where
-  --data FieldGetterSelector Identity (String, String) = FieldGetterSelectorStrings (String,String)
-  --getField' (FieldGetterSelectorStrings x) fi = pure $ Right x
-  --getErrors' (FieldGetterSelectorStrings x) fi = pure $ Nothing
-
-
-
---instance FieldGetter Identity String (String, String) where
-  --getField (a,b) _ = pure $ Right a
-  --getErrors'' (a,b) _ x = pure Nothing
-
--- runInputForm'
---   :: forall m a . FieldGetter' m a
---   => NioForm
---   -> (FormInput -> m (Either [FieldEr] a))
---   -> FormInput
---   -> m (Either NioForm a)
--- runInputForm' nf vvv formInput = do
---   x <- (vvv formInput :: m (Either [FieldEr] a))
---   case x of
---     Right x' -> pure $ pure x'
---     Left _ -> pure $ Left $ NioForm undefined
-
-

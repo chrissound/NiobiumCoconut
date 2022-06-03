@@ -1,11 +1,12 @@
 {-# LANGUAGE ExistentialQuantification #-}
 -- {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
--- {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS -Wno-unused-imports #-}
 -- {-# LANGUAGE MultiParamTypeClasses #-}
 {-# Options -Wno-orphans #-}
 {-# Options -Wno-unused-matches #-}
+{-# Options -Wno-simplifiable-class-constraints#-}
 
 module Test where
 
@@ -28,6 +29,8 @@ import           NioFormTypes
 import           TestXyz
 import           Text.Pretty.Simple
 import Control.Applicative
+import MyNioFieldError
+import Control.Monad.Identity
 
 myTests :: [TestTree]
 myTests =
@@ -113,13 +116,13 @@ main = do
   defaultMain $ testGroup "Tests:" myTests
   print "done"
 
-renderNioForm :: NioForm -> IO ()
+renderNioForm :: NioForm MyNioFieldError -> IO ()
 renderNioForm nf = forM_ (fields nf) print
 
-emptyError :: [NioFieldError]
+emptyError :: [MyNioFieldError] 
 emptyError = []
 
-testForm :: NioForm
+testForm :: NioForm MyNioFieldError
 testForm = NioForm
   [ NioFieldView "Test"   "f1" emptyError NioFieldInputText (NioFieldValS "")
   , NioFieldView "Test 2" "f2" emptyError NioFieldInputText (NioFieldValS "")
@@ -152,8 +155,26 @@ testForm = NioForm
         --getFormErrorsM fi [a]
       --, getFormErrorsM fi [b]
                 --]
+                --
+                --
+                --
+                --
+--fieldValueS :: a -> String -> c
+fieldValueS :: forall a e .
+                 (FieldGetter Identity a e String,
+                  FieldGetterErrorKey Identity a String,
+                  FieldGetterErrorMsg Identity e) =>
+                 NioValidateField a e -> String -> FormInput -> Either (FieldEr e) a
+fieldValueS x s = fieldValue x s
 
-inputTestP' :: FormInput -> Either ([FieldEr]) TestForm
+fieldValueS' :: forall e .
+                 (FieldGetter Identity [String] e String,
+                  FieldGetterErrorKey Identity [String] String,
+                  FieldGetterErrorMsg Identity e) =>
+                 NioValidateField [String] e -> String -> FormInput -> Either (FieldEr e) [String]
+fieldValueS' x s = fieldValue x s
+
+inputTestP' :: FormInput -> Either ([FieldEr MyNioFieldError]) TestForm
 inputTestP' fi = (first $ const $ collect fi)
   (((liftM5 TestForm) <$> a <*> b <*> c <*> d <*> e) fi)
  where
@@ -165,13 +186,13 @@ inputTestP' fi = (first $ const $ collect fi)
     , getFormErrors z [e]
     ]
 
-  a = fieldValue (isPresent) "f1" :: FormInput -> Either FieldEr Text
-  b = fieldValue (isPresent) "f2"
-  c = fieldValue (isEq (== True) "Not true") "f3"
-  d = fieldValue (isEq (== 4) "Not 4") "f4"
-  e = fieldValue (isPresent) "f5"
+  a = fieldValueS (isPresent) "f1" :: FormInput -> Either (FieldEr MyNioFieldError) Text
+  b = fieldValueS (isPresent) "f2"
+  c = fieldValueS (isEq (== True) "Not true") "f3"
+  d = fieldValueS (isEq (== 4) "Not 4") "f4"
+  e = fieldValueS' (isPresent) "f5" :: FormInput -> Either (FieldEr MyNioFieldError) [String]
 
-inputTestP'' :: FormInput -> Either ([FieldEr]) TestForm
+inputTestP'' :: FormInput -> Either ([FieldEr MyNioFieldError]) TestForm
 inputTestP'' fi = (first $ const $ collect fi)
   (((liftM5 TestForm) <$> a <*> b <*> c <*> d <*> e) fi)
  where
@@ -183,11 +204,11 @@ inputTestP'' fi = (first $ const $ collect fi)
     , getFormErrors z [e]
     ]
 
-  a = fieldValue (isPresent) "f1" :: FormInput -> Either FieldEr Text
-  b = fieldValue (isPresent) "f2"
-  c = fieldValue (isEq (== True) "Not true") "f3"
-  d = fieldValue (isEq (== 4) "Not 4") "f4"
-  e = fieldValue (isEq ((>=3) . Data.Foldable.length) "Not more than 2 entries") "f5"
+  a = fieldValueS (isPresent) "f1" :: FormInput -> Either (FieldEr MyNioFieldError) Text
+  b = fieldValueS (isPresent) "f2"
+  c = fieldValueS (isEq (== True) "Not true") "f3"
+  d = fieldValueS (isEq (== 4) "Not 4") "f4"
+  e = fieldValueS (isEq ((>=3) . (Data.Foldable.length :: [String] -> Int)) "Not more than 2 entries") "f5"
 
 yolo :: IO (Int, Int)
 yolo = do
@@ -195,17 +216,17 @@ yolo = do
   a _ = pure 10 :: IO Int
   b _ = pure 10 :: IO Int
 
-yoloinputTestP''' :: FormInput -> IO (Either (FieldEr) TestForm)
+yoloinputTestP''' :: FormInput -> IO (Either MyNioFieldError TestForm)
 yoloinputTestP''' fi = 
   ((liftM5 . liftM5) TestForm <$> a <*> b <*> c <*> d <*> e) fi
  where
-  a  = const(pure $ pure "") :: FormInput -> IO (Either FieldEr Text)
-  b _ = pure $ pure "" :: IO (Either FieldEr Text)
-  c _ = pure $ pure True :: IO (Either FieldEr Bool)
-  d _ = pure $ pure 10 :: IO (Either FieldEr Int)
-  e _ = pure $ pure [] :: IO (Either FieldEr [String])
+  a  = const (pure $ pure "") :: FormInput -> IO (Either MyNioFieldError Text)
+  b _ = pure $ pure "" :: IO (Either MyNioFieldError Text)
+  c _ = pure $ pure True :: IO (Either MyNioFieldError Bool)
+  d _ = pure $ pure 10 :: IO (Either MyNioFieldError Int)
+  e _ = pure $ pure [] :: IO (Either MyNioFieldError [String])
 
-yoloinputTestP'''' :: FormInput -> IO (Either [FieldEr] TestForm)
+yoloinputTestP'''' :: FormInput -> IO (Either [MyNioFieldError] TestForm)
 yoloinputTestP'''' fi = do
   allErrors' <- mconcat <$> sequence allErrors
   (first $ const allErrors') <$> ((liftM5 . liftM5) TestForm <$> a <*> b <*> c <*> d <*> e) fi
@@ -214,11 +235,11 @@ yoloinputTestP'''' fi = do
     [ getFormErrorsM fi [a]
     , getFormErrorsM fi [b]
     ]
-  a  = const(pure $ pure "") :: FormInput -> IO (Either FieldEr Text)
-  b _ = pure $ pure "" :: IO (Either FieldEr Text)
-  c _ = pure $ pure True :: IO (Either FieldEr Bool)
-  d _ = pure $ pure 10 :: IO (Either FieldEr Int)
-  e _ = pure $ pure [] :: IO (Either FieldEr [String])
+  a  = const(pure $ pure "") :: FormInput -> IO (Either MyNioFieldError Text)
+  b _ = pure $ pure "" :: IO (Either MyNioFieldError Text)
+  c _ = pure $ pure True :: IO (Either MyNioFieldError Bool)
+  d _ = pure $ pure 10 :: IO (Either MyNioFieldError Int)
+  e _ = pure $ pure [] :: IO (Either MyNioFieldError [String])
 
 --inputTestP''' :: FormInput -> IO (Either (FieldEr) TestForm)
 --inputTestP''' fi = 
