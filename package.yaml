@@ -26,7 +26,7 @@ dependencies:
 - mtl
 - pretty-simple
 name: niobiumcoconut
-version: '0.6.0.0'
+version: '0.7.0.0'
 extra-source-files: ChangeLog.md
 author: Chris Stryczynski
 license: BSD3
